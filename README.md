@@ -1,6 +1,6 @@
 # flexdat
 
-This package provides addons for `torch.utils.data.Dataset` to create flexible data pipelines.
+This package provides addons for `torch.utils.data.Dataset` to create flexible data pipelines in the context of biomedical 2D/3D/4D image analysis.
 
 ## Install
 Installation using conda:
@@ -10,24 +10,32 @@ Installation using conda:
     git clone <repo>
     pip install -e flexdat[all]
 
-## Tools
-### VSCode: Coverage Gutters
+## Overview
+
+- Relies on SimpleITK to handle volumetric data for all dataset transforms
+- Relies on numpy for all dataset operations
+- Relies on SimpleITK for DICOM loading
+
+
+## Development Tools
+### Editor: VSCode
+[VSCode](https://code.visualstudio.com/) is used for the development of this package. A project workspace can be found in `.vscode/flexdat.code-workspace`.
+
+#### Coverage Gutters extension
 `pyproject.toml` Should configure `pytest` to export code coverage. `Gutters` can display the coverage in VSCode:
 - Install the [Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) VSCode extension
 - run `pytest`
 - in VSCode, run `Coverage Gutters: Display Coverage` in the command palette
 
-### VSCode: Flake8
+#### Flake8 extension
 install extension ms-python.flake8
 
-### VSCode: mypy
+#### mypy extension
 install ms-python.mypy-type-checker
 
-## Commands
+### Useful commands
 Useful commands:
 
-    - build the documentation locally: sphinx-build flexdat/docs/ docsbuild
-    - run typing: mypy flexdat/src/
-
-## mypy
+    - build the documentation locally: `sphinx-build flexdat/docs/ docsbuild`
+    - run static type check: `mypy flexdat/src/`
 

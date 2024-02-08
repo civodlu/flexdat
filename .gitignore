@@ -1,0 +1,10 @@
+.DS_Store
+*.pyc
+.pytest_cache
+/__pycache__/
+*_vs.json
+*.log
+.ipynb_checkpoints
+lcov.info
+.coverage
+*.egg-info
