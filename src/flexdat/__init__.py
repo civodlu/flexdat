@@ -1,4 +1,5 @@
 from .dataset import CoreDataset
+from .dataset_alignment_ants import DatasetAlignmentANTs
 from .dataset_cached_h5 import DatasetCachedH5
 from .dataset_cached_multi_samples import DatasetCachedMultiSamples
 from .dataset_cached_uid import DatasetCachedUID
