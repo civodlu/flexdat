@@ -120,9 +120,7 @@ def test_docker_pipeline():
         gpu_device_get = True
         import torch
 
-        print(torch.zeros([10], device=torch.device('cuda:0')) + 42)
-
-        return '0' if torch.cuda.device_count() else None
+        return '0' if torch.cuda.device_count() else None  # CI/CD machine doesn't have a GPU!
 
     dataset = DatasetDocker(
         dataset,
