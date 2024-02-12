@@ -21,4 +21,25 @@ jobs:
         pip install -e .[all]
     - name: Run Tests
       run: |
-        pytest -ra -q --cov --cov-report=lcov:lcov.info --cov-report=term
+        pytest
+    - name: Build badges
+      run: |
+        flake8 src --output-file ci/flake8.txt
+        genbadge coverage -i ci/coverage.xml -o ci/badges/coverage.svg
+        genbadge tests -i ci/junit/junit.xml -o ci/badges/tests.svg
+        genbadge flake8 -i ci/flake8.txt -o ci/badges/flake.svg
+    - name: Upload badges
+      run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add ci/badges/coverage.svg
+          git add ci/badges/tests.svg
+          git add ci/badges/flake.svg
+          git commit -m "Updated badges"
+    
+    - name: Push changes
+      if: steps.verify-changed-files.outputs.files_changed == 'true'
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.TOKEN_GITHUB }}
+        branch: ${{ github.ref }}
