@@ -1,7 +1,9 @@
 # flexdat
 
 ![https://github.com/civodlu/flexdat/actions/workflows/python-package-conda.yml](https://github.com/civodlu/flexdat/actions/workflows/python-package-conda.yml/badge.svg)
-
+![](ci/badges/coverage.svg)
+![](ci/badges/flake.svg)
+![](ci/badges/tests.svg)
 
 This package provides addons for `torch.utils.data.Dataset` to create flexible data pipelines in the context of biomedical 2D/3D/4D image analysis.
 
