@@ -26,6 +26,7 @@ def make_image(client, tag):
     for l_out in output:
         print(l_out)
 
+    time.sleep(0.5)  # make sure the image has been registered... ugly :(
     image = client.images.get(tag)
     return image
 
@@ -113,8 +114,7 @@ def test_docker_pipeline():
     # the container will copy the content of /inputs to /outputs
     tag = 'flexdat_test4:latest'
     client = docker.from_env()
-    make_image(client, tag)  # TODO PUT THIS BACK!
-    time.sleep(0.5)  # make sure the image has been registered... ugly :(
+    make_image(client, tag)
 
     gpu_device_get = False
 
@@ -157,7 +157,7 @@ def test_docker_pipeline_from_image():
     # the container will copy the content of /inputs to /outputs
     tag = 'flexdat_test4:latest'
     client = docker.from_env()
-    image = make_image(client, tag)  # TODO PUT THIS BACK!
+    image = make_image(client, tag)
 
     image_path = os.path.join(docker_tmp_path, 'flexdat_test4.tar.gz')
     with open(image_path, 'wb') as f:
@@ -165,7 +165,6 @@ def test_docker_pipeline_from_image():
             f.write(chunk)
 
     # the image MUST exist: we just created it!
-    time.sleep(0.5)  # make sure the image has been registered... ugly :(
     client.images.remove(tag)
 
     dataset = DatasetDocker(

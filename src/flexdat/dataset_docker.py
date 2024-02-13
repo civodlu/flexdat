@@ -13,7 +13,6 @@ from .utils_import import optional_import
 logger = logging.getLogger(__name__)
 
 
-
 docker = optional_import('docker')
 fcntl = optional_import('fcntl')
 

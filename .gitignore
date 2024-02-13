@@ -8,3 +8,6 @@
 lcov.info
 .coverage
 *.egg-info
+**/coverage.xml
+**/junit.xml
+**/flake8.txt
