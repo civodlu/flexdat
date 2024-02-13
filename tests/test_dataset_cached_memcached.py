@@ -1,20 +1,18 @@
 import os
 import pickle as pkl
 import time
-from typing import Callable, Dict, Optional
+import pytest
+import platform
 
 from flexdat import DatasetCacheMemcached, DatasetNifti, DatasetPath
-from flexdat.dataset import CoreDataset
 from flexdat.dataset_memcached import (
-    decode_batch_pkl,
-    decode_batch_pkl_lz4,
     encode_batch_pkl,
     encode_batch_pkl_lz4,
 )
-from flexdat.types import Batch
 from flexdat.utils import bytes2human
 
 
+@pytest.mark.skipif(platform.system() != 'Linux', reason='Linux only!')
 def test_dataset_memcached():
     encoders = [None, encode_batch_pkl, encode_batch_pkl_lz4]
 

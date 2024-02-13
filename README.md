@@ -12,7 +12,7 @@ Installation using conda:
 
     conda create -n flexdat python=3.10
     conda activate flexdat
-    git clone <repo>
+    git clone https://github.com/civodlu/flexdat.git
     pip install -e flexdat[all]
 
 ## Overview

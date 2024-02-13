@@ -1,8 +1,6 @@
-import fcntl
 import logging
 import os
 import shutil
-import subprocess
 import sys
 import time
 from copy import copy
@@ -10,17 +8,14 @@ from typing import Any, Callable, Dict, Optional, Union
 
 from .dataset import CoreDataset
 from .types import Batch
+from .utils_import import optional_import
 
 logger = logging.getLogger(__name__)
 
 
-try:
-    # optional
-    import docker
 
-    _has_docker = True
-except:
-    _has_docker = False
+docker = optional_import('docker')
+fcntl = optional_import('fcntl')
 
 
 class Locker:
@@ -66,13 +61,6 @@ class DatasetDocker(CoreDataset):
         delete_tmp_location: bool = True,
     ):
         super().__init__()
-
-        if not _has_docker:
-            logger.error('Docker python API missing! Install it with `pip install docker` for this optional component!')
-            raise RuntimeError(
-                'Docker python API is not installed! Install it with `pip install docker` for this optional component!'
-            )
-
         self.base_dataset = base_dataset
         self.setup_index_for_docker_fn = setup_index_for_docker_fn
         self.retrieve_docker_result_fn = retrieve_docker_result_fn

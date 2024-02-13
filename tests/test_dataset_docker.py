@@ -1,9 +1,10 @@
 import os
+import platform
 import tempfile
 import time
 
 import docker
-
+import pytest
 from flexdat import DatasetDocker, DatasetMultipleDicoms, DatasetPath
 from flexdat.dataset_docker_utils import read_output_nifti, write_context_nifti
 
@@ -33,6 +34,7 @@ def make_image(client, tag):
 docker_tmp_path = os.path.expanduser('~/tmp/dataset_docker')
 
 
+@pytest.mark.skipif(platform.system() != 'Linux', reason='Linux only!')
 def test_make_container_and_run_dummy_test():
     #
     # REQUIRES:
@@ -84,6 +86,7 @@ def test_make_container_and_run_dummy_test():
         assert os.path.exists(os.path.join(outputs, 'f1.txt'))
 
 
+@pytest.mark.skipif(platform.system() != 'Linux', reason='Linux only!')
 def test_docker_pipeline():
     #
     # REQUIRES:
@@ -144,6 +147,7 @@ def test_docker_pipeline():
     assert 'output_ct_origin' in r
 
 
+@pytest.mark.skipif(platform.system() != 'Linux', reason='Linux only!')
 def test_docker_pipeline_from_image():
     path = os.path.join(here, 'resource/dicom_02')
     dataset = DatasetPath([path])
