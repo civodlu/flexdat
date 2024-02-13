@@ -39,7 +39,7 @@ jobs:
       with:
         file_pattern: 'ci/badges/*.svg'
 
-    build-win/mac:
+    build-win-mac:
       matrix:
         os: [windows-latest, macos-latest]
       runs-on: ${{ matrix.os }}
