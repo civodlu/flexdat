@@ -40,8 +40,9 @@ jobs:
         file_pattern: 'ci/badges/*.svg'
 
   build-win-mac:
-    matrix:
-      os: [windows-latest, macos-latest]
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
