@@ -17,6 +17,9 @@ Sampler = Callable[[h5py.File], Batch]
 
 
 def safe_uid(s: str) -> str:
+    """
+    Replace special characters with underscores
+    """
     return (
         s.replace('/', '_')
         .replace('\\', '_')

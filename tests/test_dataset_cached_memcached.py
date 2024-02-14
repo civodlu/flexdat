@@ -1,14 +1,12 @@
 import os
 import pickle as pkl
-import time
-import pytest
 import platform
+import time
+
+import pytest
 
 from flexdat import DatasetCacheMemcached, DatasetNifti, DatasetPath
-from flexdat.dataset_memcached import (
-    encode_batch_pkl,
-    encode_batch_pkl_lz4,
-)
+from flexdat.dataset_cached_memcached import encode_batch_pkl, encode_batch_pkl_lz4
 from flexdat.utils import bytes2human
 
 

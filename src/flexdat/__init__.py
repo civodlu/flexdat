@@ -1,13 +1,13 @@
 from .dataset import CoreDataset
 from .dataset_alignment_ants import DatasetAlignmentANTs
 from .dataset_cached_h5 import DatasetCachedH5
+from .dataset_cached_memcached import DatasetCacheMemcached
 from .dataset_cached_multi_samples import DatasetCachedMultiSamples
 from .dataset_cached_uid import DatasetCachedUID
 from .dataset_concat import DatasetConcatenate
 from .dataset_dicom import DatasetMultipleDicoms, DatasetSingleDicom
 from .dataset_dict import DatasetDict
 from .dataset_docker import DatasetDocker
-from .dataset_memcached import DatasetCacheMemcached
 from .dataset_merge import DatasetMerge
 from .dataset_nifti import DatasetNifti
 from .dataset_pairing import DatasetPaired
