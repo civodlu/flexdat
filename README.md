@@ -17,6 +17,7 @@ Installation using conda:
 
 ## Overview
 
+Main dependencies:
 - Relies on SimpleITK to handle volumetric data for all dataset transforms
 - Relies on numpy for all dataset operations
 - Relies on SimpleITK for DICOM loading
