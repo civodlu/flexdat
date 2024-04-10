@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from flexdat import DatasetCacheMemcached, DatasetNifti, DatasetPath
+from flexdat import DatasetCacheMemcached, DatasetNiftiFolder, DatasetPath
 from flexdat.dataset_cached_memcached import encode_batch_pkl, encode_batch_pkl_lz4
 from flexdat.utils import bytes2human
 
@@ -22,7 +22,7 @@ def test_dataset_memcached():
         here = os.path.abspath(os.path.dirname(__file__))
         path = os.path.join(here, 'resource/nifti_01')
         dataset = DatasetPath([path])
-        dataset = DatasetNifti(
+        dataset = DatasetNiftiFolder(
             dataset
         )  # requires the correct memcached starting options, else no caching happens due to large size of the data
         dataset = DatasetCacheMemcached(

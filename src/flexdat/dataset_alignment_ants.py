@@ -20,7 +20,7 @@ class DatasetAlignmentANTs(CoreDataset):
     Example:
 
     >>> dataset = DatasetPath(['folder/fixed', 'folder/moving'])  # has `ct.nii.gz` in this folder
-    >>> dataset = DatasetNifti(dataset)
+    >>> dataset = DatasetNiftiFolder(dataset)
     >>> transform = TransformCompose([
             # use the `meaningful` part of the intensity range to perform alignment
             TransformNormalizeRange(
