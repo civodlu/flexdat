@@ -8,6 +8,7 @@ from .dataset_concat import DatasetConcatenate
 from .dataset_dicom import DatasetMultipleDicoms, DatasetSingleDicom
 from .dataset_dict import DatasetDict
 from .dataset_docker import DatasetDocker
+from .dataset_image_reader import DatasetImageReader
 from .dataset_merge import DatasetMerge
 from .dataset_nifti_folder import DatasetNiftiFolder
 from .dataset_pairing import DatasetPaired

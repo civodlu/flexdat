@@ -63,7 +63,7 @@ Issues = "https://github.com/civodlu/flexdat/issues"
 Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
 [tool.pytest.ini_options]
-#addopts = "-ra -q --cov --cov-report=lcov:lcov.info --cov-report=term"
+# VS debut UT: comment the next line to attach to breakpoint!
 addopts = "--cov --cov-report=term  --cov-report=html:ci/html  --cov-report=lcov:ci/lcov.info  --cov-report=xml:ci/coverage.xml --junitxml=ci/junit/junit.xml"
 testpaths = [
     "tests",

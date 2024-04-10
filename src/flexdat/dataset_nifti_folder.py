@@ -13,12 +13,30 @@ from .types import Batch
 logger = logging.getLogger(__name__)
 
 
-NiftiLoader = Callable[[str], sitk.Image]
+ImageLoader = Callable[[str], sitk.Image]
+ImagePostprocessor = Callable[[Dict[str, sitk.Image]], Dict[str, sitk.Image]]
 
-NiftiPostprocessor = Callable[[Dict[str, sitk.Image]], Dict[str, sitk.Image]]
+
+def image_postprocessing_rename_fixed(images: Dict[str, sitk.Image], fixed_name: str = 'image_') -> Dict[str, sitk.Image]:
+    """
+    Rename the volume by
+    """
+    renamed = {}
+    for item_n, (name, value) in enumerate(images.items()):
+        name = os.path.basename(name)
+        name = name.replace('.nii.gz', '').replace('.nii', '') + '_'
+
+        if len(images) > 1:
+            name_str = fixed_name + str(item_n)
+        else:
+            name_str = fixed_name
+
+        renamed[name_str] = value
+
+    return renamed
 
 
-def nifty_postprocessing_rename(images: Dict[str, sitk.Image]) -> Dict[str, sitk.Image]:
+def image_postprocessing_rename(images: Dict[str, sitk.Image]) -> Dict[str, sitk.Image]:
     """
     Rename the volume by removing extension and root directory
     """
@@ -49,8 +67,8 @@ class DatasetNiftiFolder(CoreDataset):
     def __init__(
         self,
         base_dataset: CoreDataset,
-        nifti_loader: NiftiLoader = read_nifti,
-        nifty_postprocessing: Optional[NiftiPostprocessor] = nifty_postprocessing_rename,
+        nifti_loader: ImageLoader = read_nifti,
+        nifty_postprocessing: Optional[ImagePostprocessor] = image_postprocessing_rename,
         path_name: str = 'path',
         nifti_extensions: Sequence[str] = ('.nii.gz',),
         volume_serializer: VolumeSerializer = itk_serializer,
