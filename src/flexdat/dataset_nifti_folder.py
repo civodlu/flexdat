@@ -17,7 +17,7 @@ ImageLoader = Callable[[str], sitk.Image]
 ImagePostprocessor = Callable[[Dict[str, sitk.Image]], Dict[str, sitk.Image]]
 
 
-def image_postprocessing_rename_fixed(images: Dict[str, sitk.Image], fixed_name: str = 'image_') -> Dict[str, sitk.Image]:
+def image_postprocessing_rename_fixed(images: Dict[str, sitk.Image], fixed_name: str = '') -> Dict[str, sitk.Image]:
     """
     Rename the volume by
     """

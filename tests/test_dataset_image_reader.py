@@ -10,4 +10,4 @@ def test_ant_alignment():
     dataset = DatasetImageReader(dataset)
 
     b = dataset[0]
-    assert b['image_voxels'].shape == (180, 258, 226)
+    assert b['voxels'].shape == (180, 258, 226)

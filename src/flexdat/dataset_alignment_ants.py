@@ -65,6 +65,7 @@ class DatasetAlignmentANTs(CoreDataset):
         resample_prefix: str = '',
         resample_kwargs: Dict = {'interpolator': 'bSpline'},
         background_values: Dict[str, float] = {},
+        default_background_value: float = 0,
     ) -> None:
         """
         Parameters:
@@ -97,6 +98,7 @@ class DatasetAlignmentANTs(CoreDataset):
         self.resample_kwargs = resample_kwargs
         self.resample_prefix = resample_prefix
         self.background_values = background_values
+        self.default_background_value = default_background_value
 
     def __len__(self) -> int:
         return len(self.base_dataset)
@@ -128,7 +130,7 @@ class DatasetAlignmentANTs(CoreDataset):
 
             background_value = self.background_values.get(name)
             if background_value is None:
-                background_value = 1
+                background_value = self.default_background_value
 
             if name in self.resample_volumes_segmentations:
                 # segmentation: we don't want ANY interpolation
