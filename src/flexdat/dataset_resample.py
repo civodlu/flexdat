@@ -183,7 +183,7 @@ class DatasetResample(CoreDataset):
             interpolator_itk = self.interpolator_itk
             volume_dtype = sitk.GetArrayViewFromImage(volume_itk).dtype
             if volume_dtype in self.segmentation_dtype:
-                # spacial case: if we have segmentations, do NOT interpolate!
+                # special case: if we have segmentations, do NOT interpolate!
                 interpolator_itk = sitk.sitkNearestNeighbor
 
             background_value = self.background_value(batch, name, self.modality_name)

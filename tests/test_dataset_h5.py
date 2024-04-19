@@ -10,7 +10,7 @@ from flexdat import (
     DatasetPath,
     DatasetSingleDicom,
 )
-from flexdat.sampler_pairing import PairingSamplerEnumerate, PairingSamplerRandom
+from flexdat.sampler_pairing import PairingSamplerEnumerate, PairingSamplerEnumerateNamed, PairingSamplerRandom
 from flexdat.sampling import CoordinateSamplerBlock, SamplerH5
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -58,6 +58,28 @@ def test_paired_h5_sampler():
         batch = dataset.__getitem__(0, context=context)
         assert batch['sample_1_MR_T1_voxels'].shape == (60, 256, 192)
         assert batch['sample_0_MR_T1_voxels'].shape == (60, 256, 192)
+
+
+def test_paired_h5_sampler_named():
+    with tempfile.TemporaryDirectory() as path:
+        dataset = DatasetPath([os.path.join(here, 'resource/dicom_01')] * 2)
+        dataset = DatasetSingleDicom(dataset, name_prefix='MR_T1_')
+        dataset = DatasetCachedH5(
+            base_dataset=dataset, path_to_cache_root=path, dataset_name='dataset-test', dataset_version='1.0', mode='a'
+        )
+
+        dataset = DatasetPaired(dataset, [[0, 0]], pairing_sampler=PairingSamplerEnumerateNamed(('first_', 'second_')))
+        batch = dataset[0]
+
+        # the sampler MUST be linked in paired dataset!
+        assert batch['first_sampling_indices_min_zyx'] == batch['second_sampling_indices_min_zyx']
+        assert batch['first_sampling_indices_max_zyx'] == batch['second_sampling_indices_max_zyx']
+
+        # if this flag is present in the context, sampler should not be used!
+        context = {'dataset_h5_disable_sampler': True}
+        batch = dataset.__getitem__(0, context=context)
+        assert batch['second_MR_T1_voxels'].shape == (60, 256, 192)
+        assert batch['first_MR_T1_voxels'].shape == (60, 256, 192)
 
 
 def test_paired_h5_sampler_random():

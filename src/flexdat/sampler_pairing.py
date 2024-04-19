@@ -87,3 +87,24 @@ class PairingSamplerEnumerate:
         choices = pairing[base_index]
         pairing_sampled = [(f'{self.prefix}{c_n}_', c) for c_n, c in enumerate(choices)]
         return pairing_sampled
+
+
+class PairingSamplerEnumerateNamed:
+    """
+    Sampler that enumerates in order the pairing and give them a fixed name
+    """
+    def __init__(self, names: Sequence[str]):
+        self.names = names
+
+    def __call__(
+        self,
+        base_index: int,
+        pairing: Pairing,
+        context: Optional[Dict],
+        pairing_metadata: Optional[Dict[str, Sequence[Any]]],
+    ) -> Sequence[Tuple[str, int]]:
+
+        choices = pairing[base_index]
+        assert len(choices) == len(self.names)
+        pairing_sampled = [(f'{c_n}', c) for c_n, c in zip(self.names, choices)]
+        return pairing_sampled
