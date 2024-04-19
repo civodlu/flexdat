@@ -49,7 +49,7 @@ def image_postprocessing_rename(images: Dict[str, sitk.Image]) -> Dict[str, sitk
     return renamed
 
 
-class DatasetNiftiFolder(CoreDataset):
+class DatasetImageFolder(CoreDataset):
     """
     Dataset pointing to a local path, containing multiple nifty images of the same patient
     (e.g., PET/CT modality or multiple MR sequences)
@@ -60,7 +60,7 @@ class DatasetNiftiFolder(CoreDataset):
 
     >>> paths = ['/path/1', '/path/2']
     >>> dataset = DatasetPath(paths)
-    >>> dataset = DatasetNiftiFolder(dataset)
+    >>> dataset = DatasetImageFolder(dataset)
     >>> batch = dataset[0]
     """
 

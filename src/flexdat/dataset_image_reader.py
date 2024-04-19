@@ -4,7 +4,7 @@ from typing import Callable, Dict, Optional
 
 from .dataset import CoreDataset
 from .dataset_dicom import VolumeSerializer, itk_serializer
-from .dataset_nifti_folder import (
+from .dataset_image_folder import (
     ImageLoader,
     ImagePostprocessor,
     image_postprocessing_rename_fixed,

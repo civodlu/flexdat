@@ -95,7 +95,11 @@ def post_processor_resample_fixed_reference(
     """
     ref_n = None
     for header_n, h in enumerate(headers):
-        h_filename = getattr(h, 'filename')
+        try:
+            h_filename = getattr(h, 'filename')
+        except AttributeError:
+            h_filename = 'NotSpecified'
+            
         if h['Modality'] == geometry_reference_modality:
             assert (
                 ref_n is None

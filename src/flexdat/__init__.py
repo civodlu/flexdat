@@ -14,7 +14,7 @@ from .dataset_dict import DatasetDict
 from .dataset_docker import DatasetDocker
 from .dataset_image_reader import DatasetImageReader
 from .dataset_merge import DatasetMerge
-from .dataset_nifti_folder import DatasetNiftiFolder
+from .dataset_image_folder import DatasetImageFolder
 from .dataset_pairing import DatasetPaired
 from .dataset_pairing_list import DatasetPairedList
 from .dataset_pairing_preprocessor import DatasetPairingPreprocessor
