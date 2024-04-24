@@ -4,11 +4,8 @@ from typing import Callable, Dict, Optional
 
 from .dataset import CoreDataset
 from .dataset_dicom import VolumeSerializer, itk_serializer
-from .dataset_image_folder import (
-    ImageLoader,
-    ImagePostprocessor,
-    image_postprocessing_rename_fixed,
-)
+from .dataset_image_folder import ImageLoader
+from .dataset_image_processing import image_postprocessing_rename_fixed, ImagePostprocessor
 from .itk import read_nifti
 from .types import Batch
 
@@ -62,11 +59,20 @@ class DatasetImageReader(CoreDataset):
         path = batch.get(self.path_name)
 
         assert path is not None, f'missing dataset key={self.path_name}'
-        assert isinstance(path, str)
-        assert os.path.exists(path), f'path={path} does not exist!'
-        assert os.path.isfile(path), f'path={path} must be a regular file!'
-
-        image_paths = [path]
+        if not isinstance(path, (list, tuple)): 
+            # single image
+            assert isinstance(path, str)
+            assert os.path.exists(path), f'path={path} does not exist!'
+            assert os.path.isfile(path), f'path={path} must be a regular file!'
+            image_paths = [path]
+        else:
+            for p in path:
+                assert isinstance(p, str)
+                assert os.path.exists(p), f'path={p} does not exist!'
+                assert os.path.isfile(p), f'path={p} must be a regular file!'
+            image_paths = path
+            
+        
         logger.info(f'Reading image={image_paths}')
         images = {p: self.image_loader(p) for p in image_paths}
 

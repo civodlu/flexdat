@@ -9,44 +9,13 @@ from .dataset import CoreDataset
 from .dataset_dicom import VolumeSerializer, itk_serializer
 from .itk import read_nifti
 from .types import Batch
+from .dataset_image_processing import ImagePostprocessor, ImageProcessingCombine, image_postprocessing_rename_fixed, image_postprocessing_rename
+
 
 logger = logging.getLogger(__name__)
 
 
 ImageLoader = Callable[[str], sitk.Image]
-ImagePostprocessor = Callable[[Dict[str, sitk.Image]], Dict[str, sitk.Image]]
-
-
-def image_postprocessing_rename_fixed(images: Dict[str, sitk.Image], fixed_name: str = '') -> Dict[str, sitk.Image]:
-    """
-    Rename the volume by
-    """
-    renamed = {}
-    for item_n, (name, value) in enumerate(images.items()):
-        name = os.path.basename(name)
-        name = name.replace('.nii.gz', '').replace('.nii', '') + '_'
-
-        if len(images) > 1:
-            name_str = fixed_name + str(item_n)
-        else:
-            name_str = fixed_name
-
-        renamed[name_str] = value
-
-    return renamed
-
-
-def image_postprocessing_rename(images: Dict[str, sitk.Image]) -> Dict[str, sitk.Image]:
-    """
-    Rename the volume by removing extension and root directory
-    """
-    renamed = {}
-    for name, value in images.items():
-        name = os.path.basename(name)
-        name = name.replace('.nii.gz', '').replace('.nii', '') + '_'
-        renamed[name] = value
-
-    return renamed
 
 
 class DatasetImageFolder(CoreDataset):
