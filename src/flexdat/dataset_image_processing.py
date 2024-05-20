@@ -1,9 +1,10 @@
 import logging
 import os
 from typing import Callable, Dict, Sequence, Union
-from .itk import ItkInterpolatorType, SpacingType, resample_spacing
+
 import SimpleITK as sitk
 
+from .itk import ItkInterpolatorType, SpacingType, resample_spacing
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +16,10 @@ class ImageProcessingCombine:
     """
     Combine multiple processors
     """
+
     def __init__(self, processors: Sequence[ImagePostprocessor]):
         self.processors = processors
-    
+
     def __call__(self, images: Dict[str, sitk.Image]) -> Dict[str, sitk.Image]:
         for p in self.processors:
             images = p(images)
@@ -43,7 +45,10 @@ def image_postprocessing_rename_fixed(images: Dict[str, sitk.Image], fixed_name:
     return renamed
 
 
-def image_postprocessing_rename(images: Dict[str, sitk.Image], name_fn: Callable[[str], str] = lambda name: name.replace('.nii.gz', '').replace('.nii', '') + '_') -> Dict[str, sitk.Image]:
+def image_postprocessing_rename(
+    images: Dict[str, sitk.Image],
+    name_fn: Callable[[str], str] = lambda name: name.replace('.nii.gz', '').replace('.nii', '') + '_',
+) -> Dict[str, sitk.Image]:
     """
     Rename the volume by removing extension and root directory
     """
@@ -68,20 +73,20 @@ def post_processor_resample_fixed_spacing_images(
     images_processed = {}
     for name, image in images.items():
         if isinstance(interpolators, Dict):
-            interpolator = interpolators.get(name)
+            interpolator: ItkInterpolatorType = interpolators.get(name)  # type: ignore
         else:
-            interpolator = interpolators
+            interpolator: ItkInterpolatorType = interpolators  # type: ignore
 
         if isinstance(background_values, Dict):
-            background_value = background_values.get(name)
+            background_value: float = background_values.get(name)  # type: ignore
         else:
-            background_value = background_values
+            background_value: float = background_values  # type: ignore
 
         resampled = resample_spacing(
-            image, 
-            target_spacing_xyz=target_spacing_xyz, 
-            interpolator=interpolator, 
-            background_value=background_value
+            image,
+            target_spacing_xyz=target_spacing_xyz,
+            interpolator=interpolator,
+            background_value=background_value,
         )
         images_processed[name] = resampled
     return images_processed

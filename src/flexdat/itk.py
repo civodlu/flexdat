@@ -28,6 +28,22 @@ def get_itk_interpolator(mode: ItkInterpolatorType = 'linear') -> Any:
         raise NotImplementedError(f'interpolator={mode} not handled!')
 
 
+def is_pixelid_discrete(image: sitk.Image) -> bool:
+    """
+    Return true if an image has discrete voxel values
+    """
+    return image.GetPixelID in [
+        sitk.sitkUInt8,
+        sitk.sitkInt8,
+        sitk.sitkUInt16,
+        sitk.sitkInt16,
+        sitk.sitkUInt32,
+        sitk.sitkInt32,
+        sitk.sitkUInt64,
+        sitk.sitkInt64,
+    ]
+
+
 def get_sitk_image_attributes(sitk_image: sitk.Image) -> Dict[str, Any]:
     """Get physical space attributes (meta-data) of the image."""
     attributes = {}
@@ -194,6 +210,37 @@ def resample_voxels(
     return image_r
 
 
+def resample_like(
+    image_source: sitk.Image,
+    image_target: sitk.Image,
+    interpolator: Optional[ItkInterpolatorType] = None,
+    background_value: float = 0,
+) -> sitk.Image:
+    """
+    Resample a source image into the target geometry.
+    """
+    if interpolator is None:
+        if is_pixelid_discrete(image_source):
+            # most likely segmentation, no interpolation!
+            interpolator_itk = get_itk_interpolator('nearest')
+        else:
+            interpolator_itk = get_itk_interpolator('spline')
+    else:
+        interpolator_itk = get_itk_interpolator(interpolator)
+
+    image_source_resampled = sitk.Resample(
+        image_source,
+        size=image_target.GetSize(),  # type: ignore
+        interpolator=interpolator_itk,
+        outputOrigin=image_target.GetOrigin(),
+        outputSpacing=image_target.GetSpacing(),
+        outputDirection=image_target.GetDirection(),
+        defaultPixelValue=background_value,
+    )
+
+    return image_source_resampled
+
+
 def standard_orientation(v: sitk.Image) -> sitk.Image:
     """
     MR images may be oriented in any direction (axis swapped or inverted).
@@ -331,7 +378,13 @@ def crop_image(
 
 def read_nifti(path: str) -> sitk.Image:
     """Read a NIfTI image. Return a SimpleITK Image."""
-    nifti = sitk.ReadImage(str(path))
+    reader = sitk.ImageFileReader()
+    reader.SetFileName(str(path))
+    reader.LoadPrivateTagsOn()
+    reader.ReadImageInformation()
+    nifti: sitk.Image = reader.Execute()
+
+    # nifti = sitk.ReadImage(str(path))
     return nifti
 
 
