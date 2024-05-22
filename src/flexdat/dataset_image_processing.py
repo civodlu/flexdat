@@ -5,11 +5,12 @@ from typing import Callable, Dict, Sequence, Union
 import SimpleITK as sitk
 
 from .itk import ItkInterpolatorType, SpacingType, resample_spacing
+from .types import Batch
 
 logger = logging.getLogger(__name__)
 
 
-ImagePostprocessor = Callable[[Dict[str, sitk.Image]], Dict[str, sitk.Image]]
+ImagePostprocessor = Callable[[Dict[str, sitk.Image], Batch], Dict[str, sitk.Image]]
 
 
 class ImageProcessingCombine:
@@ -20,13 +21,17 @@ class ImageProcessingCombine:
     def __init__(self, processors: Sequence[ImagePostprocessor]):
         self.processors = processors
 
-    def __call__(self, images: Dict[str, sitk.Image]) -> Dict[str, sitk.Image]:
+    def __call__(self, images: Dict[str, sitk.Image], batch: Batch) -> Dict[str, sitk.Image]:
         for p in self.processors:
-            images = p(images)
+            images = p(images, batch)
         return images
 
 
-def image_postprocessing_rename_fixed(images: Dict[str, sitk.Image], fixed_name: str = '') -> Dict[str, sitk.Image]:
+def image_postprocessing_rename_fixed(
+    images: Dict[str, sitk.Image],
+    batch: Batch,
+    fixed_name: str = '',
+) -> Dict[str, sitk.Image]:
     """
     Rename the volume by position in the sequence
     """
@@ -47,6 +52,7 @@ def image_postprocessing_rename_fixed(images: Dict[str, sitk.Image], fixed_name:
 
 def image_postprocessing_rename(
     images: Dict[str, sitk.Image],
+    batch: Batch,
     name_fn: Callable[[str], str] = lambda name: name.replace('.nii.gz', '').replace('.nii', '') + '_',
 ) -> Dict[str, sitk.Image]:
     """
@@ -63,6 +69,7 @@ def image_postprocessing_rename(
 
 def post_processor_resample_fixed_spacing_images(
     images: Dict[str, sitk.Image],
+    batch: Batch,
     interpolators: Union[ItkInterpolatorType, Dict[str, ItkInterpolatorType]] = 'spline',
     background_values: Union[float, Dict[str, float]] = 0,
     target_spacing_xyz: SpacingType = (2.0, 2.0, 2.0),

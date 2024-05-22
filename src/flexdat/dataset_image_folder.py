@@ -7,10 +7,14 @@ import SimpleITK as sitk
 
 from .dataset import CoreDataset
 from .dataset_dicom import VolumeSerializer, itk_serializer
+from .dataset_image_processing import (
+    ImagePostprocessor,
+    ImageProcessingCombine,
+    image_postprocessing_rename,
+    image_postprocessing_rename_fixed,
+)
 from .itk import read_nifti
 from .types import Batch
-from .dataset_image_processing import ImagePostprocessor, ImageProcessingCombine, image_postprocessing_rename_fixed, image_postprocessing_rename
-
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +86,7 @@ class DatasetImageFolder(CoreDataset):
         images = {p: self.nifti_loader(p) for p in image_paths}
 
         if self.nifty_postprocessing is not None:
-            images = self.nifty_postprocessing(images)
+            images = self.nifty_postprocessing(images, batch)
 
         image_n = 0
         for image_name, image in images.items():

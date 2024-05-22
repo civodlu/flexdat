@@ -79,7 +79,7 @@ class DatasetImageReader(CoreDataset):
         images = {p: self.image_loader(p) for p in image_paths}
 
         if self.image_postprocessing is not None:
-            images = self.image_postprocessing(images)
+            images = self.image_postprocessing(images, batch)
 
         image_n = 0
         for image_name, image in images.items():
