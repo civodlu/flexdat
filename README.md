@@ -15,6 +15,17 @@ Installation using conda:
     git clone https://github.com/civodlu/flexdat.git
     pip install -e flexdat[all]
 
+Optional dependencies (Linux):
+    
+    apt install memcached
+
+    # create a docker group and add user to it
+    sudo gpasswd -a $USER docker
+    sudo usermod -aG docker $USER
+
+    
+
+
 ## Overview
 
 Main dependencies:
@@ -44,4 +55,5 @@ Useful commands:
 
     - build the documentation locally: `sphinx-build flexdat/docs/ docsbuild`
     - run static type check: `mypy flexdat/src/`
+
 

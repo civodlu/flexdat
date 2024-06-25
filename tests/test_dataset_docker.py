@@ -5,6 +5,7 @@ import time
 
 import docker
 import pytest
+
 from flexdat import DatasetDocker, DatasetMultipleDicoms, DatasetPath
 from flexdat.dataset_docker_utils import read_output_nifti, write_context_nifti
 
@@ -106,6 +107,13 @@ def test_docker_pipeline():
     #   - issues with docker-ce corrupted (GPU could not be started within container)
     #       reinstall docker: sudo apt-get install --reinstall docker-ce
     #   - `Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock`
+    #   - NVidia driver: https://stackoverflow.com/questions/75118992/docker-error-response-from-daemon-could-not-select-device-driver-with-capab
+    #                curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey |sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+    #                && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list \
+    #                && sudo apt-get update
+    #                sudo apt-get install -y nvidia-container-toolkit
+    #                sudo nvidia-ctk runtime configure --runtime=docker
+    #                sudo systemctl restart docker
     path = os.path.join(here, 'resource/dicom_02')
     dataset = DatasetPath([path])
     dataset = DatasetMultipleDicoms(dataset)

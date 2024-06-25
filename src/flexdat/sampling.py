@@ -162,6 +162,9 @@ class BlockExtractorH5Data:
         min_voxels_zyx_included: OptionalShapeZYX,
         max_voxels_zyx_included: OptionalShapeZYX,
     ) -> np.ndarray:
+        assert len(min_voxels_zyx_included) == 3, 'only ZYX shapes'
+        assert len(max_voxels_zyx_included) == 3, 'only ZYX shapes'
+
         if (
             min_voxels_zyx_included[1] is None
             and min_voxels_zyx_included[2] is None
