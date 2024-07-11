@@ -22,6 +22,14 @@ class DatasetResizeVirtual(CoreDataset):
     >>> assert dataset[3]['path'] == '/path/1'
 
     Optionally, multiple datasets can be supported.
+
+    >>> paths1 = ['/path/1', '/path/2', '/path/3']
+    >>> dataset1 = DatasetPath(paths1)
+    >>> paths2 = ['/path/1', '/path/2', '/path/3']
+    >>> dataset2 = DatasetPath(paths2)
+    >>> dataset = DatasetResizeVirtual([dataset1, dataset2], size=10)
+    >>> assert dataset[0]['path'] in paths1
+    >>> assert dataset[1]['path'] in paths2
     """
 
     def __init__(
