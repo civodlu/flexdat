@@ -101,6 +101,9 @@ class CoordinateSamplerBlock(CoordinateSampler):
         assert shape[0] is not None
         assert shape[1] is not None
         assert shape[2] is not None
+        assert self.block_shape[0] <= shape[0]
+        assert self.block_shape[1] <= shape[1]
+        assert self.block_shape[2] <= shape[2]
         nb_slices = shape[0]
 
         excluded_slice_indices: Sequence[int] = ()
@@ -127,8 +130,8 @@ class CoordinateSamplerBlock(CoordinateSampler):
                 slice_range_min = slice_index
                 slice_range_max = slice_index + self.block_shape[0]
 
-                y_min = np.random.randint(0, shape[1] - self.block_shape[1])
-                x_min = np.random.randint(0, shape[2] - self.block_shape[2])
+                y_min = np.random.randint(0, shape[1] - self.block_shape[1] + 1)
+                x_min = np.random.randint(0, shape[2] - self.block_shape[2] + 1)
                 for ii in range(slice_range_min, slice_range_max):
                     if ii in excluded_slice_indices:
                         slice_index_good = False
