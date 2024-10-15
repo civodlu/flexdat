@@ -110,7 +110,7 @@ def reorder_slices_single_series(dicom_names: Sequence[str]) -> Sequence[Sequenc
         (0x0008, 0x0060),  # Modality
         (0x0020, 0x0032),  # ImagePositionPatient
     ]
-    dcms = [pydicom.read_file(f, specific_tags=tags) for f in dicom_names]  # type: ignore
+    dcms = [pydicom.dcmread(f, specific_tags=tags) for f in dicom_names]  # type: ignore
     for dcm, dcm_path in zip(dcms, dicom_names):
         dcms_by_series[dcm.SeriesInstanceUID].append(dcm)
         path_by_series[dcm.SeriesInstanceUID].append(dcm_path)
@@ -174,7 +174,7 @@ def read_dicom_folder(path: str) -> Tuple[Sequence[sitk.Image], Sequence[Metadat
                 image = image[:, :, :, 0]
 
             images.append(image)
-            headers.append(MetadataAdaptor(pydicom.read_file(series_name[0])))  # type: ignore
+            headers.append(MetadataAdaptor(pydicom.dcmread(series_name[0])))  # type: ignore
         except Exception as e:
             print(f'FAILED to read Series={series_name[0]}, skipping! E={e}')
             logger.error(f'FAILED to read Series={series_name[0]}, skipping! E={e}', exc_info=True)
