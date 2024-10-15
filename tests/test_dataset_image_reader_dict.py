@@ -1,6 +1,6 @@
 import os
 
-from flexdat import DatasetImageReaderDict, DatasetPath
+from flexdat import DatasetImageReader, DatasetPath
 from flexdat.dataset_image_processing import (
     ImageProcessingCombine,
     post_processor_resample_fixed_spacing_images,
@@ -25,7 +25,7 @@ def test_read_dict_images():
         ]
     )
 
-    dataset = DatasetImageReaderDict(dataset, image_postprocessing=pp)
+    dataset = DatasetImageReader(dataset, image_postprocessing=pp)
 
     b = dataset[0]
     assert b['mr_voxels'].shape == (90, 129, 113)

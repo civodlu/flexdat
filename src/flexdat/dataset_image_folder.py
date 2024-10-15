@@ -24,7 +24,7 @@ ImageLoader = Callable[[str], sitk.Image]
 
 class DatasetImageFolder(CoreDataset):
     """
-    Dataset pointing to a local path, containing multiple nifty images of the same patient
+    Dataset pointing to a local path, containing multiple images of the same patient
     (e.g., PET/CT modality or multiple MR sequences)
 
     `nifti_extensions` will be used to locate nifti files in the folder.
