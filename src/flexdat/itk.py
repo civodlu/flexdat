@@ -32,7 +32,7 @@ def is_pixelid_discrete(image: sitk.Image) -> bool:
     """
     Return true if an image has discrete voxel values
     """
-    return image.GetPixelID in [
+    return image.GetPixelID() in [
         sitk.sitkUInt8,
         sitk.sitkInt8,
         sitk.sitkUInt16,
@@ -124,7 +124,7 @@ def resample_spacing(
     target_spacing_xyz: SpacingType,
     background_value: float = 0,
     interpolator: ItkInterpolatorType = 'linear',
-    segmentation_dtype: Any = (np.uint8,),
+    segmentation_dtype: Optional[Any] = (np.uint8,),
 ) -> sitk.Image:
     """
     Resample a given image with a target spacing, keeping the overall geometry similar
@@ -132,7 +132,7 @@ def resample_spacing(
 
     # make sure the segmentations are NOT interpolated!
     volume_dtype = sitk.GetArrayViewFromImage(image).dtype
-    if volume_dtype in segmentation_dtype:
+    if segmentation_dtype is not None and volume_dtype in segmentation_dtype:
         # spacial case: if we have segmentations, do NOT interpolate!
         interpolator_itk = sitk.sitkNearestNeighbor
     else:
@@ -276,6 +276,22 @@ def affine_transform_4x4_to_itk(m: torch.Tensor) -> sitk.AffineTransform:
     return tfm
 
 
+def affine_tfm_to_homogenous(tfm: sitk.AffineTransform) -> np.ndarray:
+    """
+    Extract a 4x4 matrix from an affine transformation
+
+    This is the reverse of affine_transform_4x4_to_itk
+    """
+    # see discussion here: https://discourse.itk.org/t/express-affinetransform-as-single-4x4-matrix/3193/5
+    A = np.array(tfm.GetMatrix()).reshape(3, 3)
+    c = np.array(tfm.GetCenter())
+    t = np.array(tfm.GetTranslation())
+    overall = np.eye(4)
+    overall[0:3, 0:3] = A
+    overall[0:3, 3] = -np.dot(A, c) + t + c
+    return overall
+
+
 def get_itk_center_mm_xyz(v: sitk.Image) -> torch.Tensor:
     """
     Calculate the center of the volume in mm
@@ -338,7 +354,8 @@ def apply_homogeneous_affine_transform(
     assert transform.shape[0] == dim + 1
     # decompose the transform as a (3x3 transform, translation) components
     position = position.unsqueeze(1).type(torch.float32)
-    return transform[:dim, :dim].mm(position).squeeze(1) + transform[:dim, dim]
+    return np.matmul(transform[:dim, :dim], position).squeeze(1) + transform[:dim, dim]
+    # return transform[:dim, :dim].mm(position).squeeze(1) + transform[:dim, dim]
 
 
 def crop_image(
