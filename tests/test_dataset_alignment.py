@@ -1,13 +1,19 @@
 import os
+from functools import partial
 
-from flexdat import DatasetAlignmentANTs, DatasetMultipleDicoms, DatasetPath
+from flexdat import (
+    DatasetAlignmentANTs,
+    DatasetImageReader,
+    DatasetPath,
+    path_reader_dicom,
+)
 
 here = os.path.abspath(os.path.dirname(__file__))
 
 
 def test_ant_alignment():
     dataset = DatasetPath([os.path.join(here, 'resource/dicom_02/')])
-    dataset = DatasetMultipleDicoms(dataset)
+    dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: h['Modality']))
     dataset = DatasetAlignmentANTs(
         dataset,
         fixed='CT_',

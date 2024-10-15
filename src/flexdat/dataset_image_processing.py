@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Callable, Dict, Optional, Sequence, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
 import SimpleITK as sitk
 
@@ -15,7 +15,11 @@ from .types import Batch
 logger = logging.getLogger(__name__)
 
 
-ImagePostprocessor = Callable[[Dict[str, sitk.Image], Batch], Dict[str, sitk.Image]]
+# <Image, possibly Headers>
+ProcessingOutput = Tuple[Dict[str, sitk.Image], Optional[Dict[str, Any]]]
+
+# Input = (Images, Batch, Headers) Return=(Images, Headers)
+ImagePostprocessor = Callable[[Dict[str, sitk.Image], Batch, Optional[Dict[str, Any]]], ProcessingOutput]
 
 
 class ImageProcessingCombine:
@@ -26,22 +30,24 @@ class ImageProcessingCombine:
     def __init__(self, processors: Sequence[ImagePostprocessor]):
         self.processors = processors
 
-    def __call__(self, images: Dict[str, sitk.Image], batch: Batch) -> Dict[str, sitk.Image]:
+    def __call__(self, images: Dict[str, sitk.Image], batch: Batch, headers: Optional[Dict[str, Any]]) -> ProcessingOutput:
         for p in self.processors:
-            images = p(images, batch)
-        return images
+            images, headers = p(images, batch, headers)
+        return images, headers
 
 
 def image_postprocessing_rename_fixed(
     images: Dict[str, sitk.Image],
     batch: Batch,
+    headers: Optional[Dict[str, Any]],
     fixed_name: str = '',
     postfix: str = '_',
-) -> Dict[str, sitk.Image]:
+) -> ProcessingOutput:
     """
     Rename the volume by position in the sequence
     """
-    renamed = {}
+    images_renamed = {}
+    headers_renamed = {}
     for item_n, (name, value) in enumerate(images.items()):
         name = os.path.basename(name)
         name = name.replace('.nii.gz', '').replace('.nii', '') + '_'
@@ -51,35 +57,53 @@ def image_postprocessing_rename_fixed(
         else:
             name_str = fixed_name
 
-        renamed[name_str] = value
+        images_renamed[name_str] = value
 
-    return renamed
+        if headers is not None:
+            value_header = headers.get(name)
+            if value_header is not None:
+                headers_renamed[name_str] = value_header
+
+    return images_renamed, headers_renamed
+
+
+def rename_remove_extension(name: str, postfix: str = '_') -> str:
+    if len(name) == 0:
+        # if empty, don't add the postfix
+        return ''
+    return name.replace('.nii.gz', '').replace('.nii', '') + postfix
 
 
 def image_postprocessing_rename(
     images: Dict[str, sitk.Image],
     batch: Batch,
-    name_fn: Callable[[str], str] = lambda name: name.replace('.nii.gz', '').replace('.nii', '') + '_',
-) -> Dict[str, sitk.Image]:
+    headers: Optional[Dict[str, Any]],
+    name_fn: Callable[[str], str] = rename_remove_extension,
+) -> ProcessingOutput:
     """
     Rename the volume by removing extension and root directory
     """
-    renamed = {}
+    images_renamed = {}
+    headers_renamed = {}
     for name, value in images.items():
-        name = os.path.basename(name)
-        name = name_fn(name)
-        renamed[name] = value
+        renamed = os.path.basename(name)
+        renamed = name_fn(renamed)
+        images_renamed[renamed] = value
 
-    return renamed
+        if headers is not None and name in headers:
+            headers_renamed[renamed] = headers[name]
+
+    return images_renamed, headers_renamed
 
 
 def post_processor_resample_fixed_spacing_images(
     images: Dict[str, sitk.Image],
     batch: Batch,
+    headers: Optional[Dict[str, Any]],
     interpolators: Union[ItkInterpolatorType, Dict[str, ItkInterpolatorType]] = 'spline',
     background_values: Union[float, Dict[str, float]] = 0,
     target_spacing_xyz: SpacingType = (2.0, 2.0, 2.0),
-) -> Dict[str, sitk.Image]:
+) -> ProcessingOutput:
     """
     Resample the data to a given fixed spacing
     """
@@ -102,17 +126,18 @@ def post_processor_resample_fixed_spacing_images(
             background_value=background_value,
         )
         images_processed[name] = resampled
-    return images_processed
+    return images_processed, headers
 
 
 def post_processor_resample_reference_images(
     images: Dict[str, sitk.Image],
     batch: Batch,
+    headers: Optional[Dict[str, Any]],
     reference_name: str,
     interpolators: Union[ItkInterpolatorType, Dict[str, ItkInterpolatorType]] = 'spline',
     background_values: Optional[Union[float, Dict[str, float]]] = None,
     target_spacing_xyz: Optional[SpacingType] = (2.0, 2.0, 2.0),
-):
+) -> ProcessingOutput:
     """
     Resample the data to a given geometry. Optionally, set a fixed spacing
     """
@@ -150,4 +175,4 @@ def post_processor_resample_reference_images(
             )
             resampled_images[name] = image_r
 
-    return resampled_images
+    return resampled_images, headers

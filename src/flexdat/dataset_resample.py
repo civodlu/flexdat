@@ -48,14 +48,14 @@ class DatasetResample(CoreDataset):
            target_spacing=[(1.0, 2.0, 3.0)],
            target_origin=[(-19.63, -39.58, 1.47)],
            target_direction=[np.eye(3)])
-    >>> dataset = DatasetSingleDicom(dataset, name_prefix='')
+    >>> dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: ''))
     >>> dataset = DatasetResample(dataset, volume_names=('',))
 
 
     Example (calculate from batch / specified)
 
     >>> dataset = DatasetPath([os.path.join(here, 'resource/dicom_01')])
-    >>> dataset = DatasetSingleDicom(dataset, name_prefix='')
+    >>> dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: ''))
     >>> dataset = DatasetResampleTargetCalculator(dataset, target_spacing_xyz=(1.0, 1.5, 2.0), volume_reference_name='')
     >>> dataset = DatasetResample(dataset, volume_names=('',))
     """
@@ -200,7 +200,7 @@ class DatasetResample(CoreDataset):
 
             volume_itk_resampled_serialized = self.volume_serializer(
                 volume=volume_itk_resampled,
-                header=batch,
+                header={},
                 index=0,
                 base_name=name,
             )

@@ -18,6 +18,9 @@ class MetadataAdaptor:
     def __getitem__(self, key: str) -> Any:
         return getattr(self.header, key)
 
+    def items(self):
+        return self.header.items()
+
 
 def _sort_images_by_series(dcms: List[pydicom.Dataset], dcms_path: List[str]) -> List[List[str]]:
     assert len(dcms) == len(dcms_path)

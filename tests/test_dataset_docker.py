@@ -2,12 +2,15 @@ import os
 import platform
 import tempfile
 import time
+from functools import partial
 
 import docker
 import pytest
 
-from flexdat import DatasetDocker, DatasetMultipleDicoms, DatasetPath
+from flexdat import DatasetDocker, DatasetPath
+from flexdat.dataset_dicom import path_reader_dicom
 from flexdat.dataset_docker_utils import read_output_nifti, write_context_nifti
+from flexdat.dataset_image_reader import DatasetImageReader
 
 here = os.path.abspath(os.path.dirname(__file__))
 docker_dir = os.path.join(here, 'docker')
@@ -116,7 +119,7 @@ def test_docker_pipeline():
     #                sudo systemctl restart docker
     path = os.path.join(here, 'resource/dicom_02')
     dataset = DatasetPath([path])
-    dataset = DatasetMultipleDicoms(dataset)
+    dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: h['Modality']))
 
     # build a simple docker image
     # the container will copy the content of /inputs to /outputs
@@ -159,7 +162,7 @@ def test_docker_pipeline():
 def test_docker_pipeline_from_image():
     path = os.path.join(here, 'resource/dicom_02')
     dataset = DatasetPath([path])
-    dataset = DatasetMultipleDicoms(dataset)
+    dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: h['Modality']))
 
     # build a simple docker image
     # the container will copy the content of /inputs to /outputs

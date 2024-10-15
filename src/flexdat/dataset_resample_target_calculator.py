@@ -18,7 +18,7 @@ class DatasetResampleTargetCalculator(CoreDataset):
     Example to resample data to a fixed shape:
 
     >>> dataset = DatasetPath([os.path.join(here, 'resource/dicom_01')])
-    >>> dataset = DatasetSingleDicom(dataset, name_prefix='')
+    >>> dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: h['Modality']))
     >>> dataset = DatasetResampleTargetCalculator(dataset, target_size_xyz=(16, 17, 18), volume_reference_name='')
     >>> dataset = DatasetResample(dataset, volume_names=('',))
     >>> batch = dataset[0]

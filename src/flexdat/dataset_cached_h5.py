@@ -34,7 +34,7 @@ class DatasetCachedH5(CoreDataset):
 
     >>> paths = ['/path/1', '/path/2']
     >>> dataset = DatasetPath(paths)
-    >>> dataset = DatasetSingleDicom(dataset)
+    >>> dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: h['Modality']))
     >>> dataset = DatasetCachedH5(dataset, 'path/to/cache', 'dataset/name', 'dataset/version', 'a')
     >>> batch = dataset[0]
 

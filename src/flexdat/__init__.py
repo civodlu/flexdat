@@ -5,11 +5,7 @@ from .dataset_cached_memcached import DatasetCacheMemcached
 from .dataset_cached_multi_samples import DatasetCachedMultiSamples
 from .dataset_cached_uid import DatasetCachedUID
 from .dataset_concat import DatasetConcatenate
-from .dataset_dicom import (
-    DatasetMultipleDicoms,
-    DatasetSingleDicom,
-    extract_itk_image_from_batch,
-)
+from .dataset_dicom import extract_itk_image_from_batch, path_reader_dicom
 from .dataset_dict import DatasetDict
 from .dataset_docker import DatasetDocker
 from .dataset_image_reader import DatasetImageReader

@@ -43,9 +43,9 @@ def default_tag_recorder(header: Any) -> Dict:
     return d
 
 
-def itk_serializer(volume: sitk.Image, header: Header, index: int, base_name: str = '') -> Dict:
+def itk_serializer(volume: sitk.Image, header: Optional[Header], index: int, base_name: str = '') -> Dict:
     """
-    Serialize the ITK image to a Batch.
+    Serialize the ITK image and header to a Batch.
 
     Parameters:
         index: the image index among a given batch
@@ -58,12 +58,16 @@ def itk_serializer(volume: sitk.Image, header: Header, index: int, base_name: st
         # convert to float32
         voxels = voxels.astype(np.float32)
 
-    return {
-        f'{base_name}voxels': voxels,
-        f'{base_name}direction': np.asarray(volume.GetDirection()).reshape((3, 3)),
-        f'{base_name}spacing': np.asarray(volume.GetSpacing(), dtype=np.float32),
-        f'{base_name}origin': np.asarray(volume.GetOrigin(), dtype=np.float32),
-    }
+    data = {}
+    if header is not None:
+        for name, value in header.items():
+            data[f'{base_name}{name}'] = value
+
+    data[f'{base_name}voxels'] = voxels
+    data[f'{base_name}direction'] = np.asarray(volume.GetDirection()).reshape((3, 3))
+    data[f'{base_name}spacing'] = np.asarray(volume.GetSpacing(), dtype=np.float32)
+    data[f'{base_name}origin'] = np.asarray(volume.GetOrigin(), dtype=np.float32)
+    return data
 
 
 def extract_itk_image_from_batch(batch: Batch, base_name: str) -> sitk.Image:
@@ -123,100 +127,26 @@ def sort_single_dicom(volumes: Sequence[sitk.Image], headers: Sequence[Header]) 
     return {'': (volumes[0], headers[0])}
 
 
-class DatasetMultipleDicoms(CoreDataset):
+def path_reader_dicom(
+    path: str,
+    tag_recoder: TagRecorder = default_tag_recorder,
+    image_namer: Callable[[Header], str] = lambda h: h['SeriesInstanceUID'],
+) -> Tuple[Dict[str, sitk.Image], Dict[str, Any]]:
     """
-    Dataset pointing to a local path, containing multiple scans of
-    the same patient (e.g., PET/CT modality or multiple MR sequences)
+    Read a folder with possibly multiple DICOM series
 
-    Example:
-
-    >>> paths = ['/path/1', '/path/2']
-    >>> dataset = DatasetPath(paths)
-    >>> dataset = DatasetMultipleDicoms(dataset)
-    >>> batch = dataset[0]
-
-    Example: processing all volumes to the same isotropic 2.0mm spacing
-
-    >>> paths = ['/path/1', '/path/2']
-    >>> dataset = DatasetPath(paths)
-    >>> dataset = DatasetMultipleDicoms(
-            dataset,
-            dicoms_postprocessing=partial(post_processor_resample_fixed_spacing,
-                geometry_reference_modality='PT', target_spacing_xyz=(2, 2, 2)))
-    >>> batch = dataset[0]
+    Returns images and selected metadata
     """
+    images, headers = read_dicom_folder(path)
 
-    def __init__(
-        self,
-        base_dataset: CoreDataset,
-        dicom_loader: DicomLoader = read_dicom_folder,
-        dicoms_postprocessing: Optional[DicomsPostprocessor] = None,
-        dicom_sorter: DicomSorter = sort_dicom_by_modality,
-        path_name: str = 'path',
-        name_prefix: str = '',
-        volume_serializer: VolumeSerializer = itk_serializer,
-        transform: Optional[Callable[[Batch], Batch]] = None,
-        tag_recoder: TagRecorder = default_tag_recorder,
-    ):
-        """
-        Args:
-            base_dataset: the base dataset to load DICOM from
-            dicom_loader: how to load the DICOM file/directory
-            path_name: location name in the base dataset
-            volume_serializer: extract information from the image (e.g., voxel, coordinate system)
-            tag_recoder: record DICOM tags
-            name_prefix: a prefix to be appended
-        """
-
-        super().__init__()
-        self.dicom_loader = dicom_loader
-        self.dicom_sorter = dicom_sorter
-        self.dicoms_postprocessing = dicoms_postprocessing
-        self.path_name = path_name
-        self.base_dataset = base_dataset
-        self.tag_recoder = tag_recoder
-        self.volume_serializer = volume_serializer
-        self.transform = transform
-        self.name_prefix = name_prefix
-
-    def __len__(self) -> int:
-        return len(self.base_dataset)
-
-    def __getitem__(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
-        batch = self.base_dataset.__getitem__(index, context)
-        if batch is None:
-            return None
-
-        path = batch.get(self.path_name)
-
-        assert path is not None, f'missing dataset key={self.path_name}'
-        assert isinstance(path, str)
-        assert os.path.exists(path), f'path={path} does not exist!'
-
-        logger.info(f'Reading DICOM={path}')
-        images, headers = self.dicom_loader(path)
-        if self.dicoms_postprocessing is not None:
-            images, headers = self.dicoms_postprocessing(images, headers)
-
-        sorted_images = self.dicom_sorter(images, headers)
-        image_n = 0
-        for image_name, (image, header) in sorted_images.items():
-            tags = self.volume_serializer(volume=image, header=header, index=image_n)
-            for name, value in tags.items():
-                assert name not in batch, f'tag collision, tag={name}'
-                batch[self.name_prefix + image_name + name] = value
-
-            tags = self.tag_recoder(header)
-            for name, value in tags.items():
-                assert name not in batch, f'tag collision, tag={name}'
-                batch[self.name_prefix + image_name + name] = value
-
-            image_n += 1
-
-        if self.transform is not None:
-            batch = self.transform(batch)
-        return batch
-
-
-# expecting a single DICOM for each path
-DatasetSingleDicom = partial(DatasetMultipleDicoms, dicom_sorter=sort_single_dicom)
+    images_final = {}
+    headers_final = {}
+    for i, h in zip(images, headers):
+        uid = image_namer(h)
+        tags = tag_recoder(h)
+        assert (
+            uid not in images_final
+        ), f'image UID is duplicated! UID should be unique but another image has the same. Got={uid}'
+        images_final[uid] = i
+        headers_final[uid] = tags
+    return images_final, headers_final

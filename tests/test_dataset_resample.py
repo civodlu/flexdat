@@ -1,14 +1,11 @@
 import os
+from functools import partial
 
 import numpy as np
 
-from flexdat import (
-    DatasetPath,
-    DatasetResample,
-    DatasetResampleTargetCalculator,
-    DatasetSingleDicom,
-)
-from flexdat.dataset_dicom import extract_itk_image_from_batch
+from flexdat import DatasetPath, DatasetResample, DatasetResampleTargetCalculator
+from flexdat.dataset_dicom import extract_itk_image_from_batch, path_reader_dicom
+from flexdat.dataset_image_reader import DatasetImageReader
 from flexdat.itk import get_itk_size_mm_xyz
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -22,7 +19,7 @@ def test_resample_ct():
         target_origin=[(-19.63, -39.58, 1.47)],
         target_direction=[np.eye(3)],
     )
-    dataset = DatasetSingleDicom(dataset, name_prefix='')
+    dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: ''))
     dataset = DatasetResample(dataset, volume_names=('',))
 
     batch = dataset[0]
@@ -39,7 +36,7 @@ def test_resample_ct_optional_dont_exist():
         target_origin=[(-19.63, -39.58, 1.47)],
         target_direction=[np.eye(3)],
     )
-    dataset = DatasetSingleDicom(dataset, name_prefix='')
+    dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: ''))
     dataset = DatasetResample(dataset, volume_names=('',), optional_volume_names=('IMAGINARY'))
 
     batch = dataset[0]
@@ -56,7 +53,7 @@ def test_resample_ct_optional_exist():
         target_origin=[(-19.63, -39.58, 1.47)],
         target_direction=[np.eye(3)],
     )
-    dataset = DatasetSingleDicom(dataset, name_prefix='')
+    dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: ''))
     dataset = DatasetResample(dataset, volume_names=(), optional_volume_names=(''))
 
     batch = dataset[0]
@@ -68,7 +65,7 @@ def test_resample_ct_optional_exist():
 def test_resample_specified_size():
     # keep everything the same EXCEPT the resolution
     dataset = DatasetPath([os.path.join(here, 'resource/dicom_01')])
-    dataset_orig = DatasetSingleDicom(dataset, name_prefix='')
+    dataset_orig = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: ''))
 
     batch_orig = dataset_orig[0]
     v_orig = extract_itk_image_from_batch(batch_orig, '')
@@ -87,7 +84,8 @@ def test_resample_specified_size():
 
 def test_resample_target():
     dataset = DatasetPath([os.path.join(here, 'resource/dicom_01')])
-    dataset = DatasetSingleDicom(dataset, name_prefix='')
+
+    dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: ''))
     dataset = DatasetResampleTargetCalculator(dataset, target_size_xyz=(16, 17, 18), volume_reference_name='')
     dataset = DatasetResample(dataset, volume_names=('',))
 
@@ -98,7 +96,7 @@ def test_resample_target():
 def test_resample_specified_spacing():
     # keep everything the same EXCEPT the resolution
     dataset = DatasetPath([os.path.join(here, 'resource/dicom_01')])
-    dataset_orig = DatasetSingleDicom(dataset, name_prefix='')
+    dataset_orig = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: ''))
 
     batch_orig = dataset_orig[0]
     v_orig = extract_itk_image_from_batch(batch_orig, '')
@@ -115,7 +113,7 @@ def test_resample_specified_spacing():
     assert np.abs(v_itk_size_mm - v_orig_size_mm).max() < 1e-3
 
     dataset = DatasetPath([os.path.join(here, 'resource/dicom_01')])
-    dataset = DatasetSingleDicom(dataset, name_prefix='')
+    dataset = DatasetImageReader(dataset, path_reader=partial(path_reader_dicom, image_namer=lambda h: ''))
     dataset = DatasetResampleTargetCalculator(dataset, target_spacing_xyz=(1.0, 1.5, 2.0), volume_reference_name='')
     dataset = DatasetResample(dataset, volume_names=('',))
 
