@@ -36,6 +36,7 @@ def image_postprocessing_rename_fixed(
     images: Dict[str, sitk.Image],
     batch: Batch,
     fixed_name: str = '',
+    postfix: str = '_',
 ) -> Dict[str, sitk.Image]:
     """
     Rename the volume by position in the sequence
@@ -46,7 +47,7 @@ def image_postprocessing_rename_fixed(
         name = name.replace('.nii.gz', '').replace('.nii', '') + '_'
 
         if len(images) > 1:
-            name_str = fixed_name + str(item_n)
+            name_str = fixed_name + str(item_n) + postfix
         else:
             name_str = fixed_name
 

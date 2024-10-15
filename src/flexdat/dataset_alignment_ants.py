@@ -10,9 +10,9 @@ from .dataset_dicom import (
     extract_itk_image_from_batch,
     itk_serializer,
 )
+from .itk import make_sitk_like
 from .types import Batch
 from .utils import np_array_type_clip
-from .itk import make_sitk_like
 
 
 class DatasetAlignmentANTs(CoreDataset):
@@ -22,7 +22,7 @@ class DatasetAlignmentANTs(CoreDataset):
     Example:
 
     >>> dataset = DatasetPath(['folder/fixed', 'folder/moving'])  # has `ct.nii.gz` in this folder
-    >>> dataset = DatasetImageFolder(dataset)
+    >>> dataset = DatasetImageReader(dataset)
     >>> transform = TransformCompose([
             # use the `meaningful` part of the intensity range to perform alignment
             TransformNormalizeRange(
@@ -68,7 +68,7 @@ class DatasetAlignmentANTs(CoreDataset):
         resample_kwargs: Dict = {'interpolator': 'bSpline'},
         background_values: Dict[str, float] = {},
         default_background_value: float = 0,
-        record_tfm: bool = False
+        record_tfm: bool = False,
     ) -> None:
         """
         Parameters:
@@ -171,7 +171,7 @@ class DatasetAlignmentANTs(CoreDataset):
             moving_orig_np_dtype = sitk.GetArrayViewFromImage(moving_orig_itk).dtype
             moving_aligned_np = np_array_type_clip(moving_aligned_np, moving_orig_np_dtype)
             moving_aligned_itk = make_sitk_like(moving_aligned_np, moving_aligned_itk)
-                
+
             moving_attributes = self.volume_serializer(
                 volume=moving_aligned_itk,
                 header={},

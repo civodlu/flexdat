@@ -12,7 +12,6 @@ from .dataset_dicom import (
 )
 from .dataset_dict import DatasetDict
 from .dataset_docker import DatasetDocker
-from .dataset_image_folder import DatasetImageFolder
 from .dataset_image_reader import DatasetImageReader
 from .dataset_merge import DatasetMerge
 from .dataset_multi_samples import DatasetMultiSample

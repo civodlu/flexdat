@@ -7,16 +7,14 @@ import SimpleITK as sitk
 
 from .dataset import CoreDataset
 from .dataset_dicom import VolumeSerializer, itk_serializer
-from .dataset_image_folder import ImageLoader
-from .dataset_image_processing import (
-    ImagePostprocessor,
-    image_postprocessing_rename,
-    image_postprocessing_rename_fixed,
-)
+from .dataset_image_processing import ImagePostprocessor, image_postprocessing_rename
 from .itk import read_nifti
 from .types import Batch
 
 logger = logging.getLogger(__name__)
+
+
+ImageLoader = Callable[[str], sitk.Image]
 
 
 def read_path_or_path_sequence_or_folder(
@@ -24,7 +22,6 @@ def read_path_or_path_sequence_or_folder(
     image_loader: ImageLoader = read_nifti,
     dict_name_suffix: str = '_',
     folder_file_extensions: Sequence[str] = ('.nii.gz',),
-    # folder_file_renaming: Optional[ImagePostprocessor] = image_postprocessing_rename,
 ) -> Dict[str, sitk.Image]:
     """
     Read a file or a list of files or a dict of files
@@ -33,14 +30,18 @@ def read_path_or_path_sequence_or_folder(
     if isinstance(path, str):
         if os.path.isfile(path):
             # single image
-            return {path: image_loader(path)}
+            images = {path: image_loader(path)}
+            return images
         else:
             # a folder
             image_paths = []
             for ext in folder_file_extensions:
                 additional_images = glob(os.path.join(path, '*' + ext))
                 image_paths += additional_images
+            # make sure this is reproducible
+            image_paths = sorted(image_paths)
             images = {p: image_loader(p) for p in image_paths}
+            return images
 
     if isinstance(path, dict):
         # dict of images
@@ -71,7 +72,7 @@ class DatasetImageReader(CoreDataset):
         self,
         base_dataset: CoreDataset,
         path_reader: Callable[[Any], Dict[str, sitk.Image]] = read_path_or_path_sequence_or_folder,
-        image_postprocessing: Optional[ImagePostprocessor] = image_postprocessing_rename_fixed,
+        image_postprocessing: Optional[ImagePostprocessor] = image_postprocessing_rename,
         path_name: str = 'path',
         volume_serializer: VolumeSerializer = itk_serializer,
         transform: Optional[Callable[[Batch], Batch]] = None,
