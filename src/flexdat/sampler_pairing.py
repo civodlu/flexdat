@@ -41,7 +41,7 @@ class PairingSamplerRandom:
         self.always_select_first_sample = always_select_first_sample
 
         if pairing_key_prefix is not None:
-            assert len(pairing_key_prefix) == nb_pairings, 'each sample of a pairing must be named or none'
+            assert len(pairing_key_prefix) == nb_pairings, f'each sample of a pairing must be named or none. Expected={nb_pairings}, got={len(pairing_key_prefix)}'
             self.pairing_key_prefix = pairing_key_prefix
         else:
             self.pairing_key_prefix = [f'p{n}_' for n in range(nb_pairings)]

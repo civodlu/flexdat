@@ -32,11 +32,65 @@ def bytes2human(n: Union[int, float]) -> str:
     return '%.2f' % n
 
 
-def is_numpy_integer_array(a: np.ndarray) -> bool:
+def is_dtype_signed(a: np.dtype) -> bool:
     """
-    Return True if an array type is should be considered as integers
+    Return True if an array type is signed
+    """
+    return a in (
+        int,
+        np.int8,
+        np.int16,
+        np.int32,
+        np.int64,
+        float,
+        np.float128,
+        np.float64,
+        np.float32,
+        np.float16,
+    )
+
+
+def is_dtype_integer(a: np.dtype) -> bool:
+    """
+    Return True if type should be considered as integers
 
     E.g., for resampling an image, what interpolator should we use?
     """
-    assert isinstance(a, np.ndarray)
-    return a.dtype in (int, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64, bool)
+    return a in (int, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64, np.uint64, bool)
+
+
+def is_dtype_number(a: np.dtype) -> bool:
+    """
+    Return True if type should be considered as numbers
+    """
+    return a in (
+        int,
+        np.int8,
+        np.int16,
+        np.int32,
+        np.int64,
+        float,
+        np.float128,
+        np.float256,
+        np.float64,
+        np.float32,
+        np.float16,
+        bool,
+    )
+
+
+def np_array_type_clip(v: np.ndarray, dtype: np.dtype) -> np.ndarray:
+    """
+    Prevent wrap around if incorrectly casting int->uint
+
+    The incorrect data range WILL be clipped
+
+    >>> list(np_array_type_clip(np.asarray([1.0, 2.0, -1.0]), dtype=np.uint8))
+    [1, 2, 0]
+    """
+    if not is_dtype_integer(dtype):
+        # no clipping needed for floating types
+        return v.astype(dtype)
+
+    info = np.iinfo(dtype)
+    return np.clip(v, info.min, info.max).astype(dtype)

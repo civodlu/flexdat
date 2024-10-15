@@ -11,6 +11,8 @@ from .dataset_dicom import (
     itk_serializer,
 )
 from .types import Batch
+from .utils import np_array_type_clip
+from .itk import make_sitk_like
 
 
 class DatasetAlignmentANTs(CoreDataset):
@@ -66,6 +68,7 @@ class DatasetAlignmentANTs(CoreDataset):
         resample_kwargs: Dict = {'interpolator': 'bSpline'},
         background_values: Dict[str, float] = {},
         default_background_value: float = 0,
+        record_tfm: bool = False
     ) -> None:
         """
         Parameters:
@@ -87,6 +90,7 @@ class DatasetAlignmentANTs(CoreDataset):
         self.pre_transform_alignment = pre_transform_alignment
         self.transform = transform
         self.alignment_kwargs = alignment_kwargs
+        self.record_tfm = record_tfm
         if resample_volumes_segmentations is None:
             self.resample_volumes_segmentations: Sequence[str] = ()
         else:
@@ -123,6 +127,13 @@ class DatasetAlignmentANTs(CoreDataset):
         tfm = ants.registration(fixed=fixed_ants, moving=moving_ants, **self.alignment_kwargs)
 
         batch_result = copy(batch_orig)
+        if self.record_tfm:
+            # the transform may be used for other tasks
+            # optionally return it with the batch
+            assert len(tfm['fwdtransforms']) == 1
+            tfm_itk = sitk.ReadTransform(tfm['fwdtransforms'][0])
+            batch_result['transform_itk'] = tfm_itk
+
         for name in list(self.resample_volumes) + list(self.resample_volumes_segmentations):
             # apply specific interpolation & remove any preprocessing for the alignment
             moving_orig_itk = self.volume_extractor(batch_orig, name)
@@ -151,9 +162,16 @@ class DatasetAlignmentANTs(CoreDataset):
                 )
 
             # unfortunately, ANTs will change the data types: convert back to original
+            # this is not straightforward: e.g., if we ahave an unsigned type (e.g., segmentation)
+            # the interpolation can be a problem as ants will cast to float and some voxels
+            # may be negative.
+            # BEWARE: do NOT use `sitk.Cast`!!!
             moving_aligned_itk = ants_to_itk_image(moving_aligned_ants)
-            moving_aligned_itk = sitk.Cast(moving_aligned_itk, moving_orig_itk.GetPixelID())
-
+            moving_aligned_np = sitk.GetArrayViewFromImage(moving_aligned_itk)
+            moving_orig_np_dtype = sitk.GetArrayViewFromImage(moving_orig_itk).dtype
+            moving_aligned_np = np_array_type_clip(moving_aligned_np, moving_orig_np_dtype)
+            moving_aligned_itk = make_sitk_like(moving_aligned_np, moving_aligned_itk)
+                
             moving_attributes = self.volume_serializer(
                 volume=moving_aligned_itk,
                 header={},
@@ -163,12 +181,12 @@ class DatasetAlignmentANTs(CoreDataset):
             for name, value in moving_attributes.items():
                 batch_result[self.resample_prefix + name] = value
 
-        """
-        from flexdat.itk import write_nifti
-        write_nifti(moving_aligned_itk, '/tmp/experiments/output/moving_aligned_itk.nii.gz')
-        ants.image_write(moving_aligned_ants, '/tmp/experiments/output/moving_aligned.nii.gz')
-        ants.image_write(tfm['warpedmovout'], '/tmp/experiments/output/moving_aligned_output.nii.gz')
-        ants.image_write(fixed_ants, '/tmp/experiments/output/fixed.nii.gz')
-        ants.image_write(moving_ants, '/tmp/experiments/output/moving.nii.gz')
-        """
+            """
+            from flexdat.itk import write_nifti
+            write_nifti(moving_aligned_itk, '/tmp/experiments/output/moving_aligned_itk.nii.gz')
+            ants.image_write(moving_aligned_ants, '/tmp/experiments/output/moving_aligned.nii.gz')
+            ants.image_write(tfm['warpedmovout'], '/tmp/experiments/output/moving_aligned_output.nii.gz')
+            ants.image_write(fixed_ants, '/tmp/experiments/output/fixed.nii.gz')
+            ants.image_write(moving_ants, '/tmp/experiments/output/moving.nii.gz')
+            """
         return batch_result

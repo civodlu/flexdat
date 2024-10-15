@@ -1,10 +1,15 @@
 import logging
 import os
-from typing import Callable, Dict, Sequence, Union
+from typing import Callable, Dict, Optional, Sequence, Union
 
 import SimpleITK as sitk
 
-from .itk import ItkInterpolatorType, SpacingType, resample_spacing
+from .itk import (
+    ItkInterpolatorType,
+    SpacingType,
+    get_itk_interpolator,
+    resample_spacing,
+)
 from .types import Batch
 
 logger = logging.getLogger(__name__)
@@ -97,3 +102,51 @@ def post_processor_resample_fixed_spacing_images(
         )
         images_processed[name] = resampled
     return images_processed
+
+
+def post_processor_resample_reference_images(
+    images: Dict[str, sitk.Image],
+    batch: Batch,
+    reference_name: str,
+    interpolators: Union[ItkInterpolatorType, Dict[str, ItkInterpolatorType]] = 'spline',
+    background_values: Optional[Union[float, Dict[str, float]]] = None,
+    target_spacing_xyz: Optional[SpacingType] = (2.0, 2.0, 2.0),
+):
+    """
+    Resample the data to a given geometry. Optionally, set a fixed spacing
+    """
+    image_ref = images[reference_name]
+
+    # make interpolator/background specific to each volume
+    if not isinstance(interpolators, dict):
+        interpolators = {name: interpolators for name in images.keys()}
+    if background_values is None:
+        background_values = {name: float(sitk.GetArrayViewFromImage(v).min()) for name, v in images.items()}
+    elif not isinstance(interpolators, dict):
+        background_values = {name: background_values for name in images.keys()}
+
+    # first resample the reference volume
+    if target_spacing_xyz is not None:
+        image_ref = resample_spacing(
+            image_ref,
+            target_spacing_xyz=target_spacing_xyz,
+            segmentation_dtype=None,  # do not rely on type
+            interpolator=interpolators[reference_name],
+        )
+
+    # then resamples all the other volumes to reference
+    resampled_images = {reference_name: image_ref}
+    for name, image in images.items():
+        if name != reference_name:
+            image_r = sitk.Resample(
+                image,
+                size=image_ref.GetSize(),  # type: ignore
+                interpolator=get_itk_interpolator(interpolators[name]),
+                outputOrigin=image_ref.GetOrigin(),
+                outputSpacing=image_ref.GetSpacing(),
+                outputDirection=image_ref.GetDirection(),
+                defaultPixelValue=background_values[name],
+            )
+            resampled_images[name] = image_r
+
+    return resampled_images

@@ -15,15 +15,15 @@ from .types import Batch
 logger = logging.getLogger(__name__)
 
 
-class DatasetImageReader(CoreDataset):
+class DatasetImageReaderDict(CoreDataset):
     """
-    Dataset pointing to a local path, containing a single image, a list of images
+    Dataset loading images from a dictionary
 
     Example:
 
-    >>> paths = ['/path/1/volume.nii.gz',]
+    >>> paths = [{'img1': '/path/1/volume1.nii.gz', 'img2': '/path/1/volume2.nii.gz'},]
     >>> dataset = DatasetPath(paths)
-    >>> dataset = DatasetImageReader(dataset)
+    >>> dataset = DatasetImageReaderDict(dataset)
     >>> batch = dataset[0]
     """
 
@@ -35,11 +35,11 @@ class DatasetImageReader(CoreDataset):
         path_name: str = 'path',
         volume_serializer: VolumeSerializer = itk_serializer,
         transform: Optional[Callable[[Batch], Batch]] = None,
+        name_postfix: str = '_',
     ):
         """
         Args:
             base_dataset: the base dataset to load DICOM from
-            dicom_loader: how to load the DICOM file/directory
             path_name: location name in the base dataset
             volume_serializer: extract information from the image (e.g., voxel, coordinate system)
         """
@@ -50,6 +50,7 @@ class DatasetImageReader(CoreDataset):
         self.base_dataset = base_dataset
         self.volume_serializer = volume_serializer
         self.transform = transform
+        self.name_postfix = name_postfix
 
     def __len__(self) -> int:
         return len(self.base_dataset)
@@ -62,21 +63,16 @@ class DatasetImageReader(CoreDataset):
         path = batch.get(self.path_name)
 
         assert path is not None, f'missing dataset key={self.path_name}'
-        if not isinstance(path, (list, tuple)):
-            # single image
-            assert isinstance(path, str)
-            assert os.path.exists(path), f'path={path} does not exist!'
-            assert os.path.isfile(path), f'path={path} must be a regular file!'
-            image_paths = [path]
-        else:
-            for p in path:
-                assert isinstance(p, str)
-                assert os.path.exists(p), f'path={p} does not exist!'
-                assert os.path.isfile(p), f'path={p} must be a regular file!'
-            image_paths = path  # type: ignore
+        assert isinstance(path, dict), 'must be a dictionary!'
+
+        for k, p in path.items():
+            assert isinstance(p, str)
+            assert os.path.exists(p), f'k={k} path={p} does not exist!'
+            assert os.path.isfile(p), f'k={k} path={p} must be a regular file!'
+        image_paths = path  # type: ignore
 
         logger.info(f'Reading image={image_paths}')
-        images = {p: self.image_loader(p) for p in image_paths}
+        images = {name + self.name_postfix: self.image_loader(path) for name, path in image_paths.items()}
 
         if self.image_postprocessing is not None:
             images = self.image_postprocessing(images, batch)

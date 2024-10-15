@@ -1,6 +1,6 @@
 import numpy as np
 
-from flexdat.utils import bytes2human, is_numpy_integer_array
+from flexdat.utils import bytes2human, is_dtype_integer, is_dtype_signed
 
 
 def test_bytes2human():
@@ -9,6 +9,14 @@ def test_bytes2human():
 
 
 def test_is_numpy_integer_array():
-    assert is_numpy_integer_array(np.zeros([4], dtype=np.uint8))
-    assert is_numpy_integer_array(np.zeros([4], dtype=np.int8))
-    assert not is_numpy_integer_array(np.zeros([4], dtype=np.float16))
+    assert is_dtype_integer(np.zeros([4], dtype=np.uint8).dtype)
+    assert is_dtype_integer(np.zeros([4], dtype=np.int8).dtype)
+    assert not is_dtype_integer(np.zeros([4], dtype=np.float16).dtype)
+
+
+def test_is_numpy_signed():
+    assert not is_dtype_signed(bool)
+    assert not is_dtype_signed(np.uint16)
+    assert is_dtype_signed(np.int16)
+    assert is_dtype_signed(int)
+    assert not is_dtype_signed(str)
