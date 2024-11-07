@@ -9,12 +9,51 @@ from mypy_extensions import DefaultNamedArg, NamedArg
 from .dataset import CoreDataset
 from .sampling import SamplerH5
 from .types import Batch
-from .utils_h5 import read_data_h5, write_data_h5
+from .utils_h5 import (
+    COMPLETION_FLAG_NAME,
+    COMPLETION_FLAG_VALUE,
+    read_data_h5,
+    write_data_h5,
+)
 
 logger = logging.getLogger(__name__)
 
-
 Sampler = Callable[[h5py.File], Batch]
+
+
+def is_hdf5_valid(local_file: str, dataset_version: str) -> bool:
+    """
+    Return True if the file is valid
+    """
+    if os.path.exists(local_file):
+        # file exist, can be opened and a version was recorded
+        try:
+            with h5py.File(local_file) as f:
+                h5_version = f['dataset_version'][()].decode()  # beware byte != str
+                if h5_version != dataset_version:
+                    return False
+
+                if not COMPLETION_FLAG_NAME in f:
+                    # we are expecting a completion flag to signal the file
+                    # was fully processed and written to disk even in the case
+                    # where a process was terminated
+                    return False
+
+                completion_flag_found = f[COMPLETION_FLAG_NAME][()].decode()
+                if completion_flag_found != COMPLETION_FLAG_VALUE:
+                    return False
+
+        except OSError:
+            # H5 is invalid or corrupted, we need to
+            # recalculate the cached data
+            logger.exception(f'{local_file} is not valid!')
+            return False
+
+        except KeyError:
+            logger.exception(f'{local_file} missing key `dataset_version`!')
+            return False
+
+    return True
 
 
 class DatasetCachedH5(CoreDataset):
@@ -117,20 +156,7 @@ class DatasetCachedH5(CoreDataset):
 
     def _get_item(self, index: int, context: Optional[Dict] = None) -> Batch:
         local_file = self._get_item_name(index)
-        h5_valid = False
-        if os.path.exists(local_file):
-            try:
-                with h5py.File(local_file) as f:
-                    h5_version = f['dataset_version'][()].decode()  # beware byte != str
-                    if h5_version == self.dataset_version:
-                        h5_valid = True
-            except OSError:
-                # H5 is invalid or corrupted, we need to
-                # recalculate the cached data
-                logger.exception(f'{local_file} is not valid!')
-            except KeyError:
-                logger.exception(f'{local_file} missing key `dataset_version`!')
-
+        h5_valid = is_hdf5_valid(local_file, dataset_version=self.dataset_version)
         if not h5_valid:
             self._reprocess_caches_index(local_file=local_file, index=index, context=context)
 

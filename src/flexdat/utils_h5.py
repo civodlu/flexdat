@@ -8,6 +8,10 @@ from .sampling import SamplerH5
 from .types import Batch
 
 
+COMPLETION_FLAG_VALUE: str = 'this file was processed correctly'
+COMPLETION_FLAG_NAME: str = '_HDF5_finished'
+
+
 def chunking_slice_fn(v: Any, max_dim: int = 16, max_slice: int = 8, max_time: int = 1) -> Optional[Tuple[int, ...]]:
     """
     Calculate the chunk shape from data
@@ -50,6 +54,14 @@ def write_data_h5(
             else:
                 # any other data
                 f.create_dataset(name, data=value)
+        
+        # in case of multi-processing, it is possible a process might crash
+        # bringing down all the processes. In very unluck situation, a HDF5
+        # could be being written while not yet finalized and still be able
+        # to be partially read by HDF5 causing serious confusion. Here we
+        # write this flag to make sure this did not happen for this HFD5 file
+        f.flush()
+        f.create_dataset(COMPLETION_FLAG_NAME, data=COMPLETION_FLAG_VALUE)
 
 
 def read_data_h5(
@@ -67,7 +79,7 @@ def read_data_h5(
             batch = {}
 
         for key in f.keys():
-            if key not in batch:
+            if key not in batch and key != COMPLETION_FLAG_NAME:
                 value = f[key][()]
                 if isinstance(value, bytes):
                     value = value.decode()
