@@ -33,6 +33,10 @@ def is_hdf5_valid(local_file: str, dataset_version: str) -> bool:
                 if h5_version != dataset_version:
                     return False
 
+                h5_name = f['dataset_name'][()].decode()  # beware byte != str
+                if len(h5_name) == 0:
+                    return False
+
                 if not COMPLETION_FLAG_NAME in f:
                     # we are expecting a completion flag to signal the file
                     # was fully processed and written to disk even in the case
@@ -125,6 +129,7 @@ class DatasetCachedH5(CoreDataset):
         self.dataset_version = dataset_version
         self.sampler = sampler
         self.dataset_name = dataset_name
+        assert len(dataset_name) > 1, 'invalid name!'
 
         self.retry_sleep_time_sec = retry_sleep_time_sec
         self.nb_retry = nb_retry
