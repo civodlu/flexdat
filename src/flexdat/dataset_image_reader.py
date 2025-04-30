@@ -22,7 +22,7 @@ def read_path_or_path_sequence_or_folder(
     path: Union[str, Sequence[str]],
     image_loader: ImageLoader = read_nifti,
     dict_name_suffix: str = '_',
-    folder_file_extensions: Sequence[str] = ('.nii.gz',),
+    folder_file_extensions: Sequence[str] = ('.nii.gz', '.mha'),
 ) -> Tuple[Dict[str, sitk.Image], Dict[str, Any]]:
     """
     Read a file or a list of files or a dict of files

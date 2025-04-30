@@ -50,7 +50,7 @@ def image_postprocessing_rename_fixed(
     headers_renamed = {}
     for item_n, (name, value) in enumerate(images.items()):
         name = os.path.basename(name)
-        name = name.replace('.nii.gz', '').replace('.nii', '') + '_'
+        name = name.replace('.nii.gz', '').replace('.nii', '').replace('.mha', '') + '_'
 
         if len(images) > 1:
             name_str = fixed_name + str(item_n) + postfix
@@ -71,7 +71,13 @@ def rename_remove_extension(name: str, postfix: str = '_') -> str:
     if len(name) == 0:
         # if empty, don't add the postfix
         return ''
-    return name.replace('.nii.gz', '').replace('.nii', '') + postfix
+
+    name_renamed = name.replace('.nii.gz', '').replace('.nii', '').replace('.mha', '')
+    if not name.endswith(postfix):
+        # don't add 2 postfixes if they are the same
+        name_renamed = name_renamed + postfix
+
+    return name_renamed
 
 
 def image_postprocessing_rename(
@@ -150,6 +156,7 @@ def post_processor_resample_reference_images(
         background_values = {name: float(sitk.GetArrayViewFromImage(v).min()) for name, v in images.items()}
     elif not isinstance(interpolators, dict):
         background_values = {name: background_values for name in images.keys()}
+    assert background_values is not None
 
     # first resample the reference volume
     if target_spacing_xyz is not None:
