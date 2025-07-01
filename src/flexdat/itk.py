@@ -5,7 +5,7 @@ import numpy as np
 import SimpleITK as sitk
 import torch
 
-ItkInterpolatorType = Literal['nearest', 'linear', 'spline', 'gaussian', 'lanczos']
+ItkInterpolatorType = Literal['nearest', 'linear', 'spline', 'gaussian', 'lanczos', 'label_gaussian']
 SpacingType = Union[float, Tuple[Optional[float], Optional[float], Optional[float]]]
 SizeOptionalType = Tuple[Optional[int], Optional[int], Optional[int]]
 
@@ -24,6 +24,8 @@ def get_itk_interpolator(mode: ItkInterpolatorType = 'linear') -> Any:
         return sitk.sitkGaussian
     elif mode == 'lanczos':
         return sitk.sitkLanczosWindowedSinc
+    elif mode == 'label_gaussian':
+        return sitk.sitkLabelGaussian
     else:
         raise NotImplementedError(f'interpolator={mode} not handled!')
 
