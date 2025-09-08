@@ -35,7 +35,7 @@ class DatasetPairingPreprocessor(CoreDataset):
     >>> dataset = DatasetPaired(
             dataset,
             associations,
-            pairing_sampler=RandomPairingSampler(pairing_key_prefix=('full_', 'low_')))
+            pairing_sampler=PairingSamplerRandom(pairing_key_prefix=('full_', 'low_')))
     """
 
     def __init__(self, base_dataset: CoreDataset, pairing: Pairing, metadata_fn: Callable[[Sequence[Batch]], Batch]) -> None:

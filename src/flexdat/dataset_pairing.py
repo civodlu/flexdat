@@ -17,7 +17,7 @@ class DatasetPaired(CoreDataset):
 
     For example:
     >>> dataset = DatasetPath(['location_1_full', 'location_2_full', 'location_1_low', 'location_2_low'])
-    >>> pairing_sampler = RandomPairingSampler(pairing_key_prefix=('full_', 'low_'))
+    >>> pairing_sampler = PairingSamplerRandom(pairing_key_prefix=('full_', 'low_'))
     >>> dataset = DatasetPaired(dataset, [(0, 2), (1, 3)], pairing_sampler=pairing_sampler)
     """
 

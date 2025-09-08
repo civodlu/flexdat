@@ -39,7 +39,7 @@ class DatasetAlignmentANTs(CoreDataset):
     >>> dataset = DatasetPaired(
             dataset,
             [[0, 1]],
-            pairing_sampler=RandomPairingSampler(pairing_key_prefix=('fixed_', 'moving_'))
+            pairing_sampler=PairingSamplerRandom(pairing_key_prefix=('fixed_', 'moving_'))
         )
     >>> dataset = DatasetAlignmentANTs(
             dataset,

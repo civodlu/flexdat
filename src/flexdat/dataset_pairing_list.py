@@ -16,7 +16,7 @@ class DatasetPairedList(CoreDataset):
 
     For example:
     >>> dataset = DatasetPath(['location_1_full', 'location_2_full', 'location_1_low', 'location_2_low'])
-    >>> pairing_sampler = RandomPairingSampler()
+    >>> pairing_sampler = PairingSamplerRandom()
     >>> dataset = DatasetPairedList(dataset, [(0, 2), (1, 3)], pairing_sampler=pairing_sampler)
     >>> samples = dataset[0]
     >>> assert samples['path'][0] == 'location_1_full'

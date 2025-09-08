@@ -70,7 +70,7 @@ def itk_serializer(volume: sitk.Image, header: Optional[Header], index: int, bas
     return data
 
 
-def extract_itk_image_from_batch(batch: Batch, base_name: str) -> sitk.Image:
+def extract_itk_image_from_batch(batch: Batch, base_name: str, dtype: Optional[np.dtype] = None) -> sitk.Image:
     """
     From a batch, try to recover an ITK image.
 
@@ -81,6 +81,9 @@ def extract_itk_image_from_batch(batch: Batch, base_name: str) -> sitk.Image:
     assert len(voxels.shape) == 3, f'must be a DHW shape! Got={voxels.shape}'
     if isinstance(voxels, torch.Tensor):
         voxels = voxels.detach().cpu().numpy()
+
+    if dtype is not None:
+        voxels = voxels.astype(dtype)
 
     direction = batch.get(base_name + 'direction')
     if isinstance(direction, torch.Tensor):
