@@ -66,6 +66,7 @@ class DatasetAlignmentANTs(CoreDataset):
         resample_volumes_segmentations: Optional[Sequence[str]] = None,
         resample_prefix: str = '',
         resample_kwargs: Dict = {'interpolator': 'bSpline'},
+        resample_reference_volume_name: Optional[str] = None,
         background_values: Dict[str, float] = {},
         default_background_value: float = 0,
         record_tfm: bool = False,
@@ -80,6 +81,8 @@ class DatasetAlignmentANTs(CoreDataset):
             resample_volumes_segmentations: the name of the segmentations to be resampled.
                 This is handled separately to avoid changing segmentation IDs caused by interpolation
             background_values: the background value for each volume resampled. If not specified, `0` is used
+            resample_reference_volume_name: the name of the volume to be used as the reference geometry for
+                the resampling
         """
         super().__init__()
         self.base_dataset = base_dataset
@@ -103,6 +106,7 @@ class DatasetAlignmentANTs(CoreDataset):
         self.resample_prefix = resample_prefix
         self.background_values = background_values
         self.default_background_value = default_background_value
+        self.resample_reference_volume_name = resample_reference_volume_name
 
     def __len__(self) -> int:
         return len(self.base_dataset)
@@ -134,6 +138,11 @@ class DatasetAlignmentANTs(CoreDataset):
             tfm_itk = sitk.ReadTransform(tfm['fwdtransforms'][0])
             batch_result['transform_itk'] = tfm_itk
 
+        resample_reference_ants = fixed_ants
+        if self.resample_reference_volume_name is not None:
+            resample_reference_itk = self.volume_extractor(batch, self.resample_reference_volume_name)
+            resample_reference_ants = itk_to_ants_image(resample_reference_itk)
+
         for name in list(self.resample_volumes) + list(self.resample_volumes_segmentations):
             # apply specific interpolation & remove any preprocessing for the alignment
             moving_orig_itk = self.volume_extractor(batch_orig, name)
@@ -146,7 +155,7 @@ class DatasetAlignmentANTs(CoreDataset):
             if name in self.resample_volumes_segmentations:
                 # segmentation: we don't want ANY interpolation
                 moving_aligned_ants = ants.apply_transforms(
-                    fixed=fixed_ants,
+                    fixed=resample_reference_ants,
                     moving=moving_orig_ants,
                     transformlist=tfm['fwdtransforms'],
                     interpolator='nearestNeighbor',
@@ -154,7 +163,7 @@ class DatasetAlignmentANTs(CoreDataset):
                 )
             else:
                 moving_aligned_ants = ants.apply_transforms(
-                    fixed=fixed_ants,
+                    fixed=resample_reference_ants,
                     moving=moving_orig_ants,
                     transformlist=tfm['fwdtransforms'],
                     defaultvalue=background_value,
