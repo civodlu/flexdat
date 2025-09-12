@@ -16,10 +16,13 @@ logger = logging.getLogger(__name__)
 Sampler = Callable[[h5py.File], Batch]
 
 
-def safe_uid(s: str) -> str:
+def safe_uid(s: Optional[str]) -> Optional[str]:
     """
     Replace special characters with underscores
     """
+    if s is None:
+        return None
+
     return (
         s.replace('/', '_')
         .replace('\\', '_')
@@ -30,6 +33,11 @@ def safe_uid(s: str) -> str:
         .replace('(', '_')
         .replace(')', '_')
     )
+
+
+class BatchNoneException(Exception):
+    def __init__(self) -> None:
+        super().__init__()
 
 
 class DatasetCachedUID(CoreDataset):
@@ -120,6 +128,8 @@ class DatasetCachedUID(CoreDataset):
 
     def _get_item_name(self, base_batch: Batch) -> str:
         uids = [safe_uid(base_batch[u]) for u in self.base_dataset_uids]
+        if None in uids:
+            raise BatchNoneException()
         uids = '_'.join(uids)
         local_file = os.path.join(self.path_to_cache_root, f'{self.dataset_name}-{uids}.h5')
         return local_file
@@ -172,7 +182,11 @@ class DatasetCachedUID(CoreDataset):
         return batch
 
     def __getitem__(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
-        base_batch = self.base_dataset.__getitem__(index, context)
+        try:
+            base_batch = self.base_dataset.__getitem__(index, context)
+        except BatchNoneException:
+            return None
+
         if base_batch is None:
             return None
 
@@ -180,6 +194,9 @@ class DatasetCachedUID(CoreDataset):
             try:
                 batch = self._get_item(base_batch, index, context)
                 return batch
+            except BatchNoneException:
+                return None
+
             except OSError as e:
                 logger.info(
                     f'_get_item exception: {e}. Possibly reading or writing to the same '
