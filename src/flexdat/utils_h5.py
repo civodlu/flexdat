@@ -7,7 +7,6 @@ import torch
 from .sampling import SamplerH5
 from .types import Batch
 
-
 COMPLETION_FLAG_VALUE: str = 'this file was processed correctly'
 COMPLETION_FLAG_NAME: str = '_HDF5_finished'
 
@@ -54,12 +53,12 @@ def write_data_h5(
             else:
                 # any other data
                 f.create_dataset(name, data=value)
-        
+
         # in case of multi-processing, it is possible a process might crash
-        # bringing down all the processes. In very unluck situation, a HDF5
+        # bringing down all the processes. In very unlucky situation, a HDF5
         # could be being written while not yet finalized and still be able
         # to be partially read by HDF5 causing serious confusion. Here we
-        # write this flag to make sure this did not happen for this HFD5 file
+        # write this flag to make sure the content of the file is valid
         f.flush()
         f.create_dataset(COMPLETION_FLAG_NAME, data=COMPLETION_FLAG_VALUE)
 

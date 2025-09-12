@@ -6,6 +6,7 @@ import numpy as np
 
 from flexdat import DatasetCachedH5, DatasetPaired, DatasetPairedList, DatasetPath
 from flexdat.dataset_dicom import path_reader_dicom
+from flexdat.dataset_dict import DatasetDict
 from flexdat.dataset_image_reader import DatasetImageReader
 from flexdat.sampler_pairing import (
     PairingSamplerEnumerate,
@@ -142,3 +143,21 @@ def test_paired_list_h5_sampler_blocks():
         # the sampler MUST be linked in paired dataset!
         assert batch['sampling_indices_min_zyx'][0] == batch['sampling_indices_min_zyx'][1]
         assert batch['sampling_indices_max_zyx'][0] == batch['sampling_indices_max_zyx'][1]
+
+
+def test_dataset_with_batch_none():
+    with tempfile.TemporaryDirectory() as path:
+        dataset = DatasetDict([{'path': 'value_1'}, {'path': 'value_2'}, None, {'path': 'value_3'}])
+        dataset = DatasetCachedH5(
+            base_dataset=dataset,
+            path_to_cache_root=path,
+            dataset_name='dataset-test',
+            dataset_version='2.0',
+            mode='a',
+        )
+
+        assert len(dataset) == 4
+        assert dataset[0]['path'] == 'value_1'
+        assert dataset[1]['path'] == 'value_2'
+        assert dataset[2] is None
+        assert dataset[3]['path'] == 'value_3'

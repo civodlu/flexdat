@@ -57,7 +57,9 @@ def is_hdf5_valid(local_file: str, dataset_version: str) -> bool:
             logger.exception(f'{local_file} missing key `dataset_version`!')
             return False
 
-    return True
+        return True
+    else:
+        return False
 
 
 class DatasetCachedH5(CoreDataset):
@@ -146,20 +148,28 @@ class DatasetCachedH5(CoreDataset):
         local_file = os.path.join(self.path_to_cache_root, f'{self.dataset_name}-{index}.h5')
         return local_file
 
+    @staticmethod
+    def is_batch_none(batch: Batch) -> bool:
+        return 'this_batch_is_none' in batch
+
     def _reprocess_caches_index(self, local_file: str, index: int, context: Optional[Dict] = None) -> None:
         # reprocess the index and cache the result
         logger.info(f'reprocessing index={index}')
         assert self.mode == 'a' or self.mode == 'w', f'invalid mode, cannot write! mode={self.mode}'
         batch = self.base_dataset.__getitem__(index, context)
-        assert batch is not None
+        batch_is_none = False
+        if batch is None:
+            batch_is_none = True
+            batch = {'this_batch_is_none': True}
+
         batch['dataset_version'] = self.dataset_version
 
-        if self.pre_transform is not None:
+        if self.pre_transform is not None and not batch_is_none:
             batch = self.pre_transform(batch)
 
         self.write_data_fn(batch, local_file)
 
-    def _get_item(self, index: int, context: Optional[Dict] = None) -> Batch:
+    def _get_item(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
         local_file = self._get_item_name(index)
         h5_valid = is_hdf5_valid(local_file, dataset_version=self.dataset_version)
         if not h5_valid:
@@ -175,6 +185,8 @@ class DatasetCachedH5(CoreDataset):
         # here the data MUST be valid!
         try:
             batch = self.read_data_fn(local_file, sampler=sampler, context=context)
+            if DatasetCachedH5.is_batch_none(batch):
+                return None
         except OSError:
             # maybe there was a problem during the creation of the data. H5 is valid
             # but NOT one data field so reprocess it just in case.

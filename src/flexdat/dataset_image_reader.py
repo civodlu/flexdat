@@ -107,7 +107,8 @@ class DatasetImageReader(CoreDataset):
             return None
 
         path = batch.get(self.path_name)
-        assert path is not None, f'missing dataset key={self.path_name}'
+        if path is None:
+            return None
 
         images, headers = self.path_reader(path)
         if self.image_postprocessing is not None:
