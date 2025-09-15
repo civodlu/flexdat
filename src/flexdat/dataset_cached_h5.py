@@ -12,6 +12,7 @@ from .types import Batch
 from .utils_h5 import (
     COMPLETION_FLAG_NAME,
     COMPLETION_FLAG_VALUE,
+    THIS_BATCH_IS_NONE_FLAG_NAME,
     read_data_h5,
     write_data_h5,
 )
@@ -29,6 +30,10 @@ def is_hdf5_valid(local_file: str, dataset_version: str) -> bool:
         # file exist, can be opened and a version was recorded
         try:
             with h5py.File(local_file) as f:
+                if THIS_BATCH_IS_NONE_FLAG_NAME in f:
+                    # it is a valid file but considered "None"
+                    return True
+
                 h5_version = f['dataset_version'][()].decode()  # beware byte != str
                 if h5_version != dataset_version:
                     return False
@@ -37,7 +42,7 @@ def is_hdf5_valid(local_file: str, dataset_version: str) -> bool:
                 if len(h5_name) == 0:
                     return False
 
-                if not COMPLETION_FLAG_NAME in f:
+                if COMPLETION_FLAG_NAME not in f:
                     # we are expecting a completion flag to signal the file
                     # was fully processed and written to disk even in the case
                     # where a process was terminated
@@ -150,7 +155,7 @@ class DatasetCachedH5(CoreDataset):
 
     @staticmethod
     def is_batch_none(batch: Batch) -> bool:
-        return 'this_batch_is_none' in batch
+        return THIS_BATCH_IS_NONE_FLAG_NAME in batch
 
     def _reprocess_caches_index(self, local_file: str, index: int, context: Optional[Dict] = None) -> None:
         # reprocess the index and cache the result
@@ -160,7 +165,7 @@ class DatasetCachedH5(CoreDataset):
         batch_is_none = False
         if batch is None:
             batch_is_none = True
-            batch = {'this_batch_is_none': True}
+            batch = {THIS_BATCH_IS_NONE_FLAG_NAME: True}
 
         batch['dataset_version'] = self.dataset_version
 
@@ -198,7 +203,7 @@ class DatasetCachedH5(CoreDataset):
 
         return batch
 
-    def __getitem__(self, index: int, context: Optional[Dict] = None) -> Batch:
+    def __getitem__(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
         for i in range(self.nb_retry):
             try:
                 batch = self._get_item(index, context)

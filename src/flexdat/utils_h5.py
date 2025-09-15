@@ -9,6 +9,7 @@ from .types import Batch
 
 COMPLETION_FLAG_VALUE: str = 'this file was processed correctly'
 COMPLETION_FLAG_NAME: str = '_HDF5_finished'
+THIS_BATCH_IS_NONE_FLAG_NAME: str = 'this_batch_is_none'
 
 
 def chunking_slice_fn(v: Any, max_dim: int = 16, max_slice: int = 8, max_time: int = 1) -> Optional[Tuple[int, ...]]:
