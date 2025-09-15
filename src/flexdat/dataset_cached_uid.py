@@ -147,7 +147,7 @@ class DatasetCachedUID(CoreDataset):
 
         self.write_data_fn(batch, local_file)
 
-    def _get_item(self, base_batch: Batch, index: int, context: Optional[Dict] = None) -> Batch:
+    def _get_item(self, base_batch: Batch, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
         local_file = self._get_item_name(base_batch)
         h5_valid = False
         if os.path.exists(local_file):
@@ -169,6 +169,8 @@ class DatasetCachedUID(CoreDataset):
         # here the data MUST be valid!
         try:
             batch = self.read_data_fn(local_file, context=context)
+            if batch is None:
+                return None
         except OSError:
             # maybe there was a problem during the creation of the data. H5 is valid
             # but NOT one data field so reprocess it just in case.
