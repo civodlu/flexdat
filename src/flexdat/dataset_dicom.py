@@ -77,7 +77,7 @@ def extract_itk_image_from_batch(batch: Batch, base_name: str, dtype: Optional[n
     This is the reverse of `itk_serializer`
     """
     voxels = batch.get(base_name + 'voxels')
-    assert voxels is not None, f'cannot find voxels in batch name={base_name + "_voxels"}! Got keys={batch.keys()}'
+    assert voxels is not None, f'cannot find voxels in batch name={base_name + "voxels"}! Got keys={batch.keys()}'
     assert len(voxels.shape) == 3, f'must be a DHW shape! Got={voxels.shape}'
     if isinstance(voxels, torch.Tensor):
         voxels = voxels.detach().cpu().numpy()
