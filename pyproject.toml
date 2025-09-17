@@ -52,7 +52,7 @@ extended=[
   "antspyx"
 ]
 all=[
-  "flex.dat[test, lint, docs, typing, extended]"
+  "flexdat[test,lint,docs,typing,extended]"
 ]
 
 [project.urls]
