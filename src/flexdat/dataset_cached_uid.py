@@ -139,7 +139,8 @@ class DatasetCachedUID(CoreDataset):
         logger.info(f'reprocessing index={index}')
         assert self.mode == 'a' or self.mode == 'w', f'invalid mode, cannot write! mode={self.mode}'
         batch = self.dataset_to_cache.__getitem__(index, context)
-        assert batch is not None
+        if batch is None:
+            return
         batch['dataset_cached_version'] = self.dataset_version
 
         if self.pre_transform is not None:
