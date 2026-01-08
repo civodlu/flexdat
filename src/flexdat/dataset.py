@@ -1,8 +1,9 @@
-from typing import Dict, Optional, Protocol
+from typing import Dict, Optional, Protocol, runtime_checkable
 
 from .types import Batch
 
 
+@runtime_checkable
 class CoreDataset(Protocol):
     """
     Base dataset class. This mimic the `torch.utils.data.Dataset` API.
