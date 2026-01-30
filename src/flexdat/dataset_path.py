@@ -37,7 +37,11 @@ class DatasetPath(CoreDataset):
         return len(self.locations)
 
     def __getitem__(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
-        batch = {'path': self.locations[index]}
+        path = self.locations[index]
+        if path is None:
+            return None
+        
+        batch = {'path': path}
         for key, values in self.metadata.items():
             batch[key] = values[index]
         return batch
