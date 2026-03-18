@@ -22,6 +22,7 @@ class DatasetTransform(CoreDataset):
         super().__init__()
         self.base_dataset = base_dataset
         self.transform = transform
+        assert transform is not None, 'transform cannot be None!'
 
     def __len__(self) -> int:
         return len(self.base_dataset)
