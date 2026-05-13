@@ -208,3 +208,6 @@ class DatasetCachedUID(CoreDataset):
                 time.sleep(self.retry_sleep_time_sec)
 
         raise RuntimeError(f'Could not process index={index}')
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

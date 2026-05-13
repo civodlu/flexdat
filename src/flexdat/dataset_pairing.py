@@ -101,3 +101,6 @@ class DatasetPaired(CoreDataset):
             final_batch = self.transform(final_batch)
 
         return final_batch
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from .dataset import CoreDataset
 from .types import Batch
@@ -54,3 +54,6 @@ class DatasetCachedMultiSamples(CoreDataset):
         # make a copy to make sure the original sample is NOT modified
         # as we will be re-using this sample multiple time
         return copy(sample)
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

@@ -3,13 +3,13 @@ from typing import Dict, Literal, Optional, Sequence, Union
 
 import numpy as np
 
-from .dataset import CoreDataset
+from .dataset import CoreDataset, NonDeterministicDataset
 from .types import Batch
 
 logger = logging.getLogger(__name__)
 
 
-class DatasetResizeVirtual(CoreDataset):
+class DatasetResizeVirtual(NonDeterministicDataset):
     """
     Make the dataset appear to be of a different size by repeating or discarding
     indices.
@@ -37,10 +37,13 @@ class DatasetResizeVirtual(CoreDataset):
         base_dataset: Union[CoreDataset, Sequence[CoreDataset]],
         size: int,
         sampling_mode: Literal['sequential'] = 'sequential',
+        retry_on_none: bool = True,
     ):
         """
         Args:
             sampling_mode: `sequential` will sample from each base_datasets sequentially
+            retry_on_none: if True, the batch with None will be re-tried until a non-None batch is
+                obtained using the same base dataset index. May still return None if the max retry is reached.
         """
         super().__init__()
 
@@ -49,6 +52,8 @@ class DatasetResizeVirtual(CoreDataset):
         self.base_datasets = base_dataset
         self.size = size
         self.sampling_mode = sampling_mode
+        self.retry_on_none = retry_on_none
+        self.max_retry = 10000
 
     def __len__(self) -> int:
         return self.size
@@ -58,7 +63,19 @@ class DatasetResizeVirtual(CoreDataset):
         base_dataset_index = index % len(self.base_datasets)
         if self.sampling_mode == 'sequential':
             base_dataset = self.base_datasets[base_dataset_index]
-            base_index = np.random.randint(0, len(base_dataset))
-            return base_dataset.__getitem__(base_index, context)
+            # here we retry until we get a batch. This dataset is often
+            # used as a wrapper to sample from different datasets (e.g., stratification).
+            # Ensure we get a sample from EACH base dataset
+            for _ in range(self.max_retry):
+                base_index = np.random.randint(0, len(base_dataset))
+                b = base_dataset.__getitem__(base_index, context)
+                if b is not None or self.retry_on_none is False:
+                    return b
+
+            logger.warning(f'Failed to get a non-None batch after {self.max_retry} retries for dataset index {index}!')
+            return None
 
         raise ValueError(f'unsupported sampling={self.sampling_mode}!')
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return self.base_dataset

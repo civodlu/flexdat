@@ -111,6 +111,9 @@ class DatasetAlignmentANTs(CoreDataset):
     def __len__(self) -> int:
         return len(self.base_dataset)
 
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)
+
     def __getitem__(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
         import ants
 

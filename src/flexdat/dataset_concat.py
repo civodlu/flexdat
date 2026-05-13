@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Sequence
 
 import numpy as np
 
@@ -19,6 +19,9 @@ class DatasetConcatenate(CoreDataset):
     >>> d1 = DatasetPath(['L2', 'L3', 'L4])
     >>> dataset = DatasetConcatenate({'sub_dataset0': d0, 'sub_dataset1': d1})
     >>> assert len(dataset) == 5
+
+    The base datasets cannot be extended after the concatenation, as the size of the resulting
+    dataset is defined at initialization.
     """
 
     def __init__(
@@ -61,3 +64,6 @@ class DatasetConcatenate(CoreDataset):
         if self.transform is not None:
             batch = self.transform(batch)
         return batch
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return self.datasets

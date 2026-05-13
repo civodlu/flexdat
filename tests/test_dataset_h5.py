@@ -14,8 +14,13 @@ from flexdat.sampler_pairing import (
     PairingSamplerRandom,
 )
 from flexdat.sampling import CoordinateSamplerBlock, SamplerH5
-
+from flexdat.dataset import NonDeterministicDataset
 here = os.path.abspath(os.path.dirname(__file__))
+
+
+class NonDeterministicPath(DatasetPath, NonDeterministicDataset):
+    def __init__(self, paths):
+        super().__init__(paths)
 
 
 def test_basic_dataset_caching():
@@ -38,6 +43,48 @@ def test_basic_dataset_caching():
         assert len(indices) == 1
         index = indices[0]
         assert index == (index[0], None, None)
+
+
+def test_h5_sampler_nondeterministic_invalid():
+    with tempfile.TemporaryDirectory() as path:
+        dataset = NonDeterministicPath(['v0', 'v1', 'v2'])
+
+        try:
+            dataset = DatasetCachedH5(
+                base_dataset=dataset,
+                path_to_cache_root=path,
+                dataset_name='dataset-test',
+                dataset_version='1.0',
+                mode='a',
+                transform=lambda b: {**b, 'transformed': True},
+            )
+        except ValueError:
+            # we should not accept underlying non-deterministic dataset
+            pass
+        else:
+            assert False, 'should have raised an error for non-deterministic dataset!'
+
+
+def test_h5_sampler_no_transform():
+    with tempfile.TemporaryDirectory() as path:
+        dataset = DatasetPath(['v0', 'v1', 'v2'])
+        dataset = DatasetCachedH5(
+            base_dataset=dataset,
+            path_to_cache_root=path,
+            dataset_name='dataset-test',
+            dataset_version='1.0',
+            mode='a',
+            transform=lambda b: {**b, 'transformed': True},
+        )
+
+        b = dataset[0]
+        assert b['path'] == 'v0'
+        assert b['transformed']
+
+        # should not apply the transform
+        b = dataset.__getitem__(0, context={'dataset_h5_disable_transform': True})
+        assert b['path'] == 'v0'
+        assert 'transformed' not in b
 
 
 def test_paired_h5_sampler():

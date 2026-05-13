@@ -212,3 +212,6 @@ class DatasetResample(CoreDataset):
         for name in self.optional_volume_names:
             apply_resampling(name, optional=True)
         return batch
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

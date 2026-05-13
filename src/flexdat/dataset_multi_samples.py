@@ -1,7 +1,5 @@
 import logging
-from typing import Callable, Dict, Literal, Optional, Sequence, Union
-
-import numpy as np
+from typing import Callable, Dict, Optional, Sequence
 
 from .dataset import CoreDataset
 from .types import Batch
@@ -64,3 +62,6 @@ class DatasetMultiSample(CoreDataset):
         indices = to_base(index, len(self.base_dataset), min_size=self.nb_samples)
         batches = [self.base_dataset.__getitem__(i, context=context) for i in indices]
         return self.collate_fn(batches)
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -90,3 +90,6 @@ class DatasetResampleTargetCalculator(CoreDataset):
 
     def __len__(self) -> int:
         return len(self.base_dataset)
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

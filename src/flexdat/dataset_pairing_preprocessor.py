@@ -1,9 +1,6 @@
-import collections
 import logging
 from itertools import chain
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
-
-import numpy as np
+from typing import Callable, Dict, Optional, Sequence
 
 from .dataset import CoreDataset
 from .dataset_pairing import Pairing
@@ -80,3 +77,6 @@ class DatasetPairingPreprocessor(CoreDataset):
             return None
 
         return {**batch, **metadata}
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

@@ -74,3 +74,6 @@ class DatasetMerge(CoreDataset):
                     # keep only the first collision if any
                     batch[full_key] = values
         return batch
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return self.datasets

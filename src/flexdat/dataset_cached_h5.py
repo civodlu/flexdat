@@ -1,12 +1,12 @@
 import logging
 import os
 import time
-from typing import Callable, Dict, Literal, Optional
+from typing import Callable, Dict, Literal, Optional, Sequence
 
 import h5py
-from mypy_extensions import DefaultNamedArg, NamedArg
+from mypy_extensions import NamedArg
 
-from .dataset import CoreDataset
+from .dataset import CoreDataset, NonDeterministicDataset
 from .sampling import SamplerH5
 from .types import Batch
 from .utils_h5 import (
@@ -67,6 +67,17 @@ def is_hdf5_valid(local_file: str, dataset_version: str) -> bool:
         return False
 
 
+def collect_all_datasets(dataset: CoreDataset) -> list[CoreDataset]:
+    """
+    Collect all datasets in the dataset graph, including the base datasets and the dataset itself
+    """
+    datasets = [dataset]
+    for base_dataset in dataset.get_base_datasets():
+        datasets += collect_all_datasets(base_dataset)
+
+    return datasets
+
+
 class DatasetCachedH5(CoreDataset):
     """
     Cache a whole dataset using H5.
@@ -89,8 +100,9 @@ class DatasetCachedH5(CoreDataset):
     >>> batch = dataset[0]
 
     Notes:
-        * with `context['dataset_h5_disable_sampler'] = False`, the sampling will not be applied
+        * with `context['dataset_h5_disable_sampler'] = True`, the sampling will not be applied
           and the dataset will be loaded whole
+        * with `context['dataset_h5_disable_transform'] = True`, the transform will not be applied
     """
 
     def __init__(
@@ -138,6 +150,15 @@ class DatasetCachedH5(CoreDataset):
         self.dataset_name = dataset_name
         assert len(dataset_name) > 1, 'invalid name!'
 
+        # make sure that the base dataset does not depend on any non-deterministic dataset,
+        # otherwise the cache will be invalid
+        all_datasets = collect_all_datasets(base_dataset)
+        for dataset in all_datasets:
+            if isinstance(dataset, NonDeterministicDataset):
+                raise ValueError(
+                    f'base dataset contains a non-deterministic dataset {dataset}, which is not compatible with caching!'
+                )
+
         self.retry_sleep_time_sec = retry_sleep_time_sec
         self.nb_retry = nb_retry
 
@@ -148,6 +169,9 @@ class DatasetCachedH5(CoreDataset):
             return len(self.base_dataset)
         else:
             return self.new_dataset_size
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)
 
     def _get_item_name(self, index: int) -> str:
         local_file = os.path.join(self.path_to_cache_root, f'{self.dataset_name}-{index}.h5')
@@ -183,8 +207,11 @@ class DatasetCachedH5(CoreDataset):
         # for evaluation purposes, we may want to process the whole data
         # so discard the sampler by using the context
         dataset_h5_disable_sampler = None
+        dataset_h5_disable_transform = False
         if context is not None:
             dataset_h5_disable_sampler = context.get('dataset_h5_disable_sampler')
+            dataset_h5_disable_transform = context.get('dataset_h5_disable_transform', False)
+
         sampler = self.sampler if not dataset_h5_disable_sampler else None
 
         # here the data MUST be valid!
@@ -198,7 +225,7 @@ class DatasetCachedH5(CoreDataset):
             self._reprocess_caches_index(local_file=local_file, index=index, context=context)
             batch = self.read_data_fn(local_file, sampler=sampler, context=context)
 
-        if self.transform is not None:
+        if self.transform is not None and not dataset_h5_disable_transform:
             batch = self.transform(batch)
 
         return batch

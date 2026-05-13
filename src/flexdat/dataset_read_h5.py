@@ -61,3 +61,6 @@ class DatasetReadH5(CoreDataset):
             batch = self.transform(batch)
 
         return batch
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

@@ -101,6 +101,9 @@ class DatasetImageReader(CoreDataset):
     def __len__(self) -> int:
         return len(self.base_dataset)
 
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)
+
     def __getitem__(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
         batch = self.base_dataset.__getitem__(index, context)
         if batch is None:

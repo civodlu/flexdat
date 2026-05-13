@@ -4,7 +4,7 @@ import shutil
 import sys
 import time
 from copy import copy
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Union
 
 from .dataset import CoreDataset
 from .types import Batch
@@ -101,6 +101,9 @@ class DatasetDocker(CoreDataset):
             if self.gpu_device is not None
             else None
         )
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)
 
     def __getitem__(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
         logger.info(f'processing index={index}')

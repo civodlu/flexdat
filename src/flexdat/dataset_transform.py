@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Sequence
 
 from .dataset import CoreDataset
 from .types import Batch
@@ -33,3 +33,6 @@ class DatasetTransform(CoreDataset):
             return None
         batch_tfm = self.transform(batch)
         return batch_tfm
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

@@ -34,3 +34,6 @@ class DatasetSubset(CoreDataset):
         base_index = self.indices[index]
         batch = self.base_dataset.__getitem__(base_index, context)
         return batch
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

@@ -56,3 +56,6 @@ class DatasetSafe(CoreDataset):
 
         # happy path
         return batch
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)

@@ -1,5 +1,5 @@
 import pickle as pkl
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Sequence
 
 from .dataset import CoreDataset
 from .types import Batch
@@ -84,6 +84,9 @@ class DatasetCacheMemcached(CoreDataset):
 
     def __len__(self) -> int:
         return len(self.base_dataset)
+
+    def get_base_datasets(self) -> Sequence[CoreDataset]:
+        return (self.base_dataset,)
 
     def __getitem__(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
         key_name = f'{self.database_name}_{index}'
