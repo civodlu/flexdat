@@ -23,14 +23,18 @@ class DatasetSubset(CoreDataset):
         super().__init__()
         self.base_dataset = base_dataset
         self.indices = indices
-        assert max(indices) < len(
-            base_dataset
-        ), f'max_index={max(indices)} larger than base dataset! base={len(base_dataset)}'
+        if len(indices) == 0:
+            logger.warning('DatasetSubset initialized with empty indices! The dataset will be empty.')
+            print('DatasetSubset initialized with empty indices! The dataset will be empty.')
 
     def __len__(self) -> int:
         return len(self.indices)
 
     def __getitem__(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
+        if len(self.indices) == 0:
+            # the dataset is empty, return None for any index
+            return None
+
         base_index = self.indices[index]
         batch = self.base_dataset.__getitem__(base_index, context)
         return batch

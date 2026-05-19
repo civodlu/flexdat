@@ -55,6 +55,10 @@ class DatasetResizeVirtual(NonDeterministicDataset):
         self.retry_on_none = retry_on_none
         self.max_retry = 10000
 
+        for n, dataset in enumerate(self.base_datasets):
+            if len(dataset) == 0:
+                logger.warning(f'Base dataset {n} is empty! This may be unexpected!')
+
     def __len__(self) -> int:
         return self.size
 
@@ -67,6 +71,9 @@ class DatasetResizeVirtual(NonDeterministicDataset):
             # used as a wrapper to sample from different datasets (e.g., stratification).
             # Ensure we get a sample from EACH base dataset
             for _ in range(self.max_retry):
+                if len(base_dataset) == 0:
+                    return None
+
                 base_index = np.random.randint(0, len(base_dataset))
                 b = base_dataset.__getitem__(base_index, context)
                 if b is not None or self.retry_on_none is False:
@@ -78,4 +85,4 @@ class DatasetResizeVirtual(NonDeterministicDataset):
         raise ValueError(f'unsupported sampling={self.sampling_mode}!')
 
     def get_base_datasets(self) -> Sequence[CoreDataset]:
-        return self.base_dataset
+        return self.base_datasets
