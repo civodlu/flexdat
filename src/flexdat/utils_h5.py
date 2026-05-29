@@ -72,7 +72,8 @@ def read_data_h5(
     """
     Read data stored as H5. The may could be loaded partially if chunked.
     """
-    with h5py.File(path, 'r') as f:
+    # Disable chunk caching: avoid memory leak with persistent worker processes
+    with h5py.File(path, 'r', rdcc_nbytes=0) as f:
         if sampler is not None:
             batch = sampler(f, context=context)
         else:

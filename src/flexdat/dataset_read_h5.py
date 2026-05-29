@@ -48,7 +48,8 @@ class DatasetReadH5(CoreDataset):
         assert isinstance(path, str)
         assert os.path.exists(path), f'path={path} does not exist!'
 
-        with h5py.File(path, 'r') as f:
+        # Disable chunk caching: avoid memory leak with persistent worker processes
+        with h5py.File(path, 'r', rdcc_nbytes=0) as f:
             keys = self.keys
             if keys is None:
                 keys = f.keys()
