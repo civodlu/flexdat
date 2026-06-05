@@ -40,3 +40,17 @@ def test_dataset_inject_metadata_missing_ko():
         assert False, "Expected KeyError"
     except KeyError:
         pass
+
+
+def test_dataset_inject_metadata_missing_ok_default_value():
+    metadata = {}
+    dataset = DatasetDict([{'uid': 'id_1', 'value_2': 'v2_1'}, {'uid': 'id_0', 'value_2': 'v2_0'}])
+    dataset = DatasetInjectMetadata(
+        dataset, metadata, key='uid', raise_on_missing=False, missing_metadata_value={'missing': 'YES'}
+    )
+    assert len(dataset) == 2
+
+    v0 = dataset[0]
+    assert v0['value_2'] == 'v2_1'
+    assert v0['uid'] == 'id_1'
+    assert v0['missing'] == 'YES'

@@ -23,12 +23,14 @@ class DatasetInjectMetadata(CoreDataset):
         metadata: Dict[str, Dict],
         key: str,
         raise_on_missing: bool = True,
+        missing_metadata_value: Dict = {},
     ):
         super().__init__()
         self.base_dataset = base_dataset
         self.metadata = metadata
         self.key = key
         self.raise_on_missing = raise_on_missing
+        self.missing_metadata_value = missing_metadata_value
 
     def __len__(self) -> int:
         return len(self.base_dataset)
@@ -46,7 +48,7 @@ class DatasetInjectMetadata(CoreDataset):
             if self.raise_on_missing:
                 raise KeyError(f"Metadata for uid {uid} not found in metadata dictionary")
             else:
-                return batch
+                metadata = self.missing_metadata_value
 
         batch.update(metadata)
         return batch
