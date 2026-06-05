@@ -9,6 +9,7 @@ from .dataset_dicom import extract_itk_image_from_batch, path_reader_dicom
 from .dataset_dict import DatasetDict
 from .dataset_docker import DatasetDocker
 from .dataset_image_reader import DatasetImageReader
+from .dataset_inject_metadata import DatasetInjectMetadata
 from .dataset_merge import DatasetMerge
 from .dataset_multi_samples import DatasetMultiSample
 from .dataset_pairing import DatasetPaired
