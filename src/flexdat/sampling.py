@@ -213,11 +213,13 @@ class SamplerH5:
         block_extractor: BlockExtractor = BlockExtractorH5Data(),
         keys: Optional[Sequence[str]] = None,
         use_context_sync: bool = True,
+        type_not_sampled: Tuple[type, ...] = (str, int, float),
     ) -> None:
         self.coordinate_sampler = coordinate_sampler
         self.block_extractor = block_extractor
         self.keys = keys
         self.use_context_sync = use_context_sync
+        self.type_not_sampled = type_not_sampled
 
     def __call__(self, data: h5py.File, context: Optional[Dict] = None) -> Batch:
         """
@@ -229,6 +231,8 @@ class SamplerH5:
             keys_for_sampling: Sequence[str] = []
             for key in data.keys():
                 data_value = data[key]
+                if isinstance(data_value, self.type_not_sampled):
+                    continue
                 if len(data_value.shape) >= 3 and '_bounding_boxes' not in key:
                     keys_for_sampling.append(key)  # type: ignore
         else:
