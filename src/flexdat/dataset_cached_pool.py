@@ -1,10 +1,46 @@
+from concurrent.futures import Future, ThreadPoolExecutor
 from copy import copy
-from typing import Callable, Dict, List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
 from flexdat.dataset import Batch, CoreDataset, NonDeterministicDataset
 from flexdat.dataset_cached_h5 import Sampler
+
+
+class SerialFuture:
+    """A Future that completed synchronously in the calling thread."""
+
+    def __init__(self, result: Any):
+        self._result = result
+
+    def done(self) -> bool:
+        return True
+
+    def result(self) -> Any:
+        return self._result
+
+
+class SerialExecutor:
+    """Drop-in for ThreadPoolExecutor that runs tasks immediately in the same thread."""
+
+    def submit(self, fn: Callable, *args, **kwargs) -> SerialFuture:
+        return SerialFuture(fn(*args, **kwargs))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+
+@dataclass
+class CacheSlot:
+    reuse_count: int
+    base_index: Optional[int] = None
+    batch: Batch = field(default_factory=dict)
+    future: Optional[Any] = None  # Future | SerialFuture | None
 
 
 class DatasetCachedPool(NonDeterministicDataset):
@@ -14,6 +50,10 @@ class DatasetCachedPool(NonDeterministicDataset):
     Each entries may be reused a fixed number of times before being refreshed from the base dataset.
 
     This is designed to be used with `DatasetCachedH5` or similar.
+
+    When `num_background_workers > 0`, expired cache slots are reloaded in the background while the
+    current (stale) entry continues to be served, so the pipeline is never blocked.
+    Set `num_background_workers=0` for serial/synchronous mode (easier debugging).
     """
 
     def __init__(
@@ -28,6 +68,8 @@ class DatasetCachedPool(NonDeterministicDataset):
             'dataset_h5_disable_sampler': True,
             'dataset_h5_disable_transform': True,
         },
+        num_background_workers: int = 2,
+        with_debug_info: bool = False,
     ):
         """
         Args:
@@ -36,8 +78,11 @@ class DatasetCachedPool(NonDeterministicDataset):
             number_of_reuse_per_entry: the number of times to reuse an entry before reloading
             pre_transform: a function to apply to the batch before caching
             transform: a function to apply to the batch after caching
-            sampler: a function to apply to the batch after caching and transform
+            sampler: a function to apply to the batch after caching and before transform
             default_context: the context to use when loading from the base dataset
+            num_background_workers: number of threads for background reloading.
+                0 = serial/synchronous mode (runs in same thread, easier to debug).
+                >0 = async mode (serves stale entry while reloading in background).
         """
         super().__init__()
         self.dataset = dataset
@@ -45,36 +90,58 @@ class DatasetCachedPool(NonDeterministicDataset):
         self.number_of_reuse_per_entry = number_of_reuse_per_entry
         self.pre_transform = pre_transform
         self.transform = transform
-        self.cache: List[Tuple[int, int, Batch]] = [(number_of_reuse_per_entry, None, {}) for i in range(cache_size)]
+        self.cache: List[CacheSlot] = [CacheSlot(reuse_count=number_of_reuse_per_entry) for _ in range(cache_size)]
         self.sampler = sampler
         self.default_context = default_context
+        self.executor = (
+            ThreadPoolExecutor(max_workers=num_background_workers) if num_background_workers > 0 else SerialExecutor()
+        )
+        self.with_debug_info = with_debug_info
 
         if len(dataset) == 0:
             raise ValueError('Dataset is empty!')
 
+    def _load_entry(self) -> Tuple[int, Batch]:
+        base_index = np.random.randint(0, len(self.dataset))
+        batch = self.dataset.__getitem__(base_index, self.default_context)
+        if self.pre_transform is not None:
+            batch = self.pre_transform(batch)
+        return base_index, batch
+
     def __getitem__(self, index: int, context: Optional[Dict] = {}) -> Optional[Batch]:
         assert index < self.cache_size
-        reuse_count, base_index, batch = self.cache[index]
-        if reuse_count >= self.number_of_reuse_per_entry:
-            # reload a new entry
-            base_index = np.random.randint(0, len(self.dataset))
-            batch = self.dataset.__getitem__(base_index, self.default_context)
-            if batch is None:
+        slot = self.cache[index]
+
+        # Collect completed reload (immediate in serial mode, may be pending in async)
+        if slot.future is not None and slot.future.done():
+            slot.base_index, slot.batch = slot.future.result()
+            slot.reuse_count = 0
+            slot.future = None
+
+        if slot.reuse_count >= self.number_of_reuse_per_entry and slot.future is None:
+            # Fire reload; serial mode completes it now, async mode runs it in background
+            slot.future = self.executor.submit(self._load_entry)
+            # In serial mode, collect immediately; in async mode, this won't be done yet
+            if slot.future.done():
+                slot.base_index, slot.batch = slot.future.result()
+                slot.reuse_count = 0
+                slot.future = None
+            elif not slot.batch:
+                # Cold start in async mode: no data yet, return None so caller can discard and retry
                 return None
-            if self.pre_transform is not None:
-                batch = self.pre_transform(batch)
-            self.cache[index] = (1, base_index, copy(batch))
-        else:
-            # reuse the cached entry
-            self.cache[index] = (reuse_count + 1, base_index, copy(batch))
+
+        slot.reuse_count += 1
+        batch = copy(slot.batch)
 
         if self.sampler is not None:
             batch = self.sampler(batch, context)
-
         if self.transform is not None:
             batch = self.transform(batch)
 
-        batch['dataset_cached_pool_index'] = base_index
+        if self.with_debug_info:
+            batch['dataset_cached_pool_debug_reuse_count'] = slot.reuse_count
+            batch['dataset_cached_pool_index'] = slot.base_index
+
         return batch
 
     def __len__(self) -> int:

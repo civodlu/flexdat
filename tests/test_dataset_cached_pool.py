@@ -1,3 +1,4 @@
+import time
 from functools import partial
 
 import numpy as np
@@ -8,7 +9,8 @@ from flexdat.dataset_cached_pool import DatasetCachedPool
 from flexdat.sampling import CoordinateSamplerBlock
 
 
-def transform_add_value(batch, name, values):
+def transform_add_value(batch, name, values, wait_time_sec=0.0):
+    time.sleep(wait_time_sec)
     if name not in values:
         values[name] = 1
     else:
@@ -22,7 +24,7 @@ def make_array(shape, value):
     return np.arange(np.prod(shape), dtype=np.float32).reshape(shape) + value
 
 
-def test_cached_pool_dataset():
+def test_cached_pool_dataset_serial():
     sample_1 = {
         'data_A': make_array([30, 31, 32], 10),
         'data_B': make_array([30, 31, 32], 20),
@@ -46,6 +48,8 @@ def test_cached_pool_dataset():
         pre_transform=partial(transform_add_value, name='pre_transform', values=values),
         transform=partial(transform_add_value, name='transform', values=values),
         sampler=sampler,
+        num_background_workers=0,
+        with_debug_info=True,
     )
 
     base_indices = set()
@@ -69,3 +73,53 @@ def test_cached_pool_dataset():
         assert (batch['data_B'].squeeze() == sample['data_B'][sl]).all()
 
     assert len(base_indices) == 2
+
+
+def test_cached_pool_dataset_async():
+    sample_1 = {
+        'data_A': make_array([30, 31, 32], 10),
+    }
+
+    dataset = DatasetDict([sample_1])
+
+    values = {}
+    nb_number_of_reuse_per_entry = 3
+    cached_dataset = DatasetCachedPool(
+        dataset,
+        cache_size=1,
+        number_of_reuse_per_entry=nb_number_of_reuse_per_entry,
+        pre_transform=partial(transform_add_value, name='pre_transform', values=values, wait_time_sec=2.0),
+        num_background_workers=1,
+        with_debug_info=True,
+    )
+
+    # first call will trigger the pre_transform in background
+    # we expect None as the result is not ready yet
+    batch = cached_dataset[0]
+    assert batch is None
+
+    time.sleep(5.0)  # wait for the background thread to finish
+    batch = cached_dataset[0]
+    assert batch is not None
+    assert batch['dataset_cached_pool_debug_reuse_count'] == 1
+
+    batch = cached_dataset[0]
+    assert batch is not None
+    assert batch['dataset_cached_pool_debug_reuse_count'] == 2
+
+    batch = cached_dataset[0]
+    assert batch is not None
+    assert batch['dataset_cached_pool_debug_reuse_count'] == 3
+
+    # refresh sample in background but return stale sample for nor
+    batch = cached_dataset[0]
+    assert batch is not None
+    assert batch['dataset_cached_pool_debug_reuse_count'] == 4
+
+    # wait for the background thread to finish
+    time.sleep(5.0)
+
+    # sample is fresh
+    batch = cached_dataset[0]
+    assert batch is not None
+    assert batch['dataset_cached_pool_debug_reuse_count'] == 1
