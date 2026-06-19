@@ -138,6 +138,13 @@ class DatasetCachedPool(NonDeterministicDataset):
 
         if self.sampler is not None:
             batch = self.sampler(batch, context)
+
+            # copy keys not present
+            for key, value in slot.batch.items():
+                if key not in batch:
+                    if isinstance(value, bytes):
+                        value = value.decode()
+                    batch[key] = value
         if self.transform is not None:
             batch = self.transform(batch)
 
