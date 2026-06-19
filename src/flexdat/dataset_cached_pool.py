@@ -39,7 +39,7 @@ class SerialExecutor:
 class CacheSlot:
     reuse_count: int
     base_index: Optional[int] = None
-    batch: Batch = field(default_factory=dict)
+    batch: Optional[Batch] = None
     future: Optional[Any] = None  # Future | SerialFuture | None
 
 
@@ -103,12 +103,13 @@ class DatasetCachedPool(NonDeterministicDataset):
 
     def _load_entry(self) -> Tuple[int, Batch]:
         base_index = np.random.randint(0, len(self.dataset))
-        batch = self.dataset.__getitem__(base_index, self.default_context)
-        if self.pre_transform is not None:
+        # make sure we copy the default_context, otherwise the mod
+        batch = self.dataset.__getitem__(base_index, copy(self.default_context))
+        if batch is not None and self.pre_transform is not None:
             batch = self.pre_transform(batch)
         return base_index, batch
 
-    def __getitem__(self, index: int, context: Optional[Dict] = {}) -> Optional[Batch]:
+    def __getitem__(self, index: int, context: Optional[Dict] = None) -> Optional[Batch]:
         assert index < self.cache_size
         slot = self.cache[index]
 
@@ -131,6 +132,8 @@ class DatasetCachedPool(NonDeterministicDataset):
                 return None
 
         slot.reuse_count += 1
+        if slot.batch is None:
+            return None
         batch = copy(slot.batch)
 
         if self.sampler is not None:
