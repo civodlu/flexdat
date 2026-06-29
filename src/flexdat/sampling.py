@@ -261,9 +261,10 @@ class SamplerH5:
             else:
                 if target_shape_zyx != data_value.shape:
                     # this is a common preprocessing issue. Make this error discardable using `DatasetSafe`
+                    data_filename = getattr(data, 'filename', 'unknown')
                     raise DatasetExceptionDiscard(
                         f'This sampler can only sample from volumes with the same shape. Got={data_value.shape},'
-                        f' target={target_shape_zyx}. File={data.filename}'
+                        f' target={target_shape_zyx}. File={data_filename}'
                     )
 
             blocks = []
